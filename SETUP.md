@@ -1,0 +1,372 @@
+# SETUP.md — Installing a Claude + Codex workstation
+
+<!-- ============================================================ -->
+<!-- GENERAL LAYER v1.0.0 — DO NOT EDIT.                          -->
+<!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
+<!-- ============================================================ -->
+
+> **Agents: do not install anything automatically.**
+> Every command below is for a human to run, or for an agent to run **only
+> after the human confirms that specific command**. Installing software is an
+> irreversible change to a machine you do not own. Show the command, say what
+> it does, wait.
+
+Primary commands are Windows. macOS and Linux equivalents follow each one.
+Every step has a verification command — run it before moving on.
+
+---
+
+## 1. Prerequisites
+
+| Tool | Check | Windows | macOS / Linux |
+|---|---|---|---|
+| git | `git --version` | `winget install Git.Git` | `brew install git` / distro package |
+| Node + npm | `node --version && npm --version` | `winget install OpenJS.NodeJS.LTS` | `brew install node` / distro package |
+| Claude Code | see its own docs | — | — |
+| Codex CLI | `codex --version` | see its own docs | — |
+
+**Codex on PATH.** The desktop-app build installs the CLI under a content-hashed
+directory that **changes on every update**. Never hard-code that path in a
+script or config. Resolve it at run time, or install the standalone CLI.
+
+Verify Codex can reach a model before continuing:
+
+```bash
+codex exec --skip-git-repo-check "reply with OK and nothing else"
+```
+
+### 1.1 Git identity — required, once per machine
+
+Commit authorship is per-machine configuration. A workstation that skips this
+produces commits attributed to nobody, or to whoever used the machine before.
+
+```bash
+git config --global user.name  "<your name>"
+git config --global user.email "<the email verified on your git host account>"
+git config --global --get-regexp "^user\."
+```
+
+The email must be **verified on the account of your git host**, or the commits
+will not be attributed to you. If your host offers a private no-reply address
+and you enable its "block pushes that expose my email" setting, use the
+no-reply address here instead — otherwise pushes are rejected outright.
+
+### 1.2 Git host access — only if the baseline repo is on GitHub
+
+The baseline is distributed through *a git repository* (§6). Nothing in these
+rules requires that repository to be on GitHub. Skip this section entirely for
+a self-hosted or non-GitHub remote; plain `git` plus that host's normal
+credentials is enough.
+
+For GitHub-hosted remotes, the GitHub CLI is worth the install because it
+solves credential setup and multi-account switching in one place:
+
+```bash
+winget install --id GitHub.cli --exact --silent --accept-package-agreements --accept-source-agreements
+```
+
+macOS / Linux: `brew install gh`, or your distro package.
+
+Then, in a **new** shell:
+
+```bash
+gh auth login
+```
+
+Answer: GitHub.com · HTTPS · **Yes** to "Authenticate Git with your GitHub
+credentials" · log in with a web browser. Confirm the browser is signed into
+the intended account before approving.
+
+```bash
+gh auth status
+gh auth setup-git      # run explicitly if you answered "No" above
+```
+
+Multiple accounts on one machine: `gh auth login` again for the second account,
+then `gh auth switch` to change the active one.
+
+> **Trap — a machine that already pushed as a different account.**
+> Cached credentials outlive any change to `user.email`. On Windows they sit in
+> Credential Manager; `git push` keeps using them and authenticates as the old
+> account, silently. Setting a new commit email does **not** fix this, because
+> commit authorship and push authentication are different things.
+>
+> `gh auth setup-git` is the fix: it resets the inherited credential-helper
+> chain for `github.com` and installs `gh` in its place, so the stale entries
+> are never consulted. It leaves them in place, so other tools that rely on
+> them (IDEs, for example) keep working.
+>
+> Verify with `git config --global --get-regexp credential` — you should see a
+> blank `credential.https://github.com.helper` (the reset) followed by one
+> pointing at `gh auth git-credential`. If only the blank line or neither is
+> present, `setup-git` never ran.
+
+---
+
+## 2. Skills
+
+Installed with the `skills` CLI over `npx` — nothing to install first.
+
+Two constraints, both learned the hard way:
+
+- `-a` takes **one agent per invocation**. A comma-separated list is rejected.
+- Use `--copy` on Windows. The default symlink mode needs Developer Mode or an
+  elevated shell.
+
+### Both agents
+
+```bash
+npx skills@latest add AmazingAng/old-coder -s old-coder -a claude-code -g -y --copy
+npx skills@latest add AmazingAng/old-coder -s old-coder -a codex -g -y --copy
+
+npx skills@latest add DietrichGebert/ponytail -s ponytail-review -a claude-code -g -y --copy
+npx skills@latest add DietrichGebert/ponytail -s ponytail-review -a codex -g -y --copy
+
+npx skills@latest add DietrichGebert/ponytail -s ponytail-audit -a claude-code -g -y --copy
+npx skills@latest add DietrichGebert/ponytail -s ponytail-audit -a codex -g -y --copy
+
+npx skills@latest add JUNERDD/skills -s exhaustive-code-slimmer -a claude-code -g -y --copy
+npx skills@latest add JUNERDD/skills -s exhaustive-code-slimmer -a codex -g -y --copy
+```
+
+### Claude only
+
+`grill-me` is a design-convergence tool used before the SPEC exists, and only a
+human can invoke it. `grilling` carries the actual procedure — **`grill-me`
+does nothing without it.**
+
+```bash
+npx skills@latest add mattpocock/skills -s grill-me -a claude-code -g -y --copy
+npx skills@latest add mattpocock/skills -s grilling -a claude-code -g -y --copy
+```
+
+### Verify
+
+```bash
+npx skills@latest list -g
+```
+
+Expected: `old-coder`, `ponytail-review`, `ponytail-audit`,
+`exhaustive-code-slimmer` on both agents; `grill-me` and `grilling` on Claude
+Code. Skills load at session start — **restart both agents**.
+
+### Note on `exhaustive-code-slimmer`
+
+Its security scan reports **Medium risk, 1 alert**, unlike the others. The
+cause is what it openly does: it ships Python scripts that run a subprocess (the
+behaviour-preservation oracle you give it) and delete files. An inspection of
+those scripts found no network access, no `eval`/`exec`, and no `os.system`.
+The practical safeguard is the git checkpoint required before the Cleanup layer
+runs. Remove it with:
+
+```bash
+npx skills@latest remove -s exhaustive-code-slimmer -g -y
+```
+
+---
+
+## 3. Serena MCP
+
+Symbol-level navigation for both agents: find definitions, references and
+implementations without reading whole files. It replaces the
+grep -> read -> grep loop, which is the single largest avoidable token cost.
+
+### 3.1 Install uv
+
+```bash
+winget install --id astral-sh.uv --exact --silent --accept-package-agreements --accept-source-agreements
+```
+
+macOS / Linux:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Verify: `uv --version`
+
+### 3.2 Install Serena
+
+```bash
+uv tool install -p 3.13 serena-agent
+uv tool update-shell
+```
+
+`uv tool update-shell` puts `~/.local/bin` on PATH. **Do not skip it** — the
+MCP configuration below relies on the bare command `serena` so that no config
+file contains a machine-specific absolute path.
+
+Open a new shell, then verify:
+
+```bash
+serena --version
+serena init
+```
+
+> **Known failure on Windows.** `uv tool install` may abort with
+> `Missing expected target directory for Python minor version link`. uv creates
+> the minor-version junction before extraction finishes, leaving a link that
+> resolves but cannot be traversed. Retrying does not help. Delete the link
+> only — never the target — and rerun:
+>
+> ```powershell
+> [System.IO.Directory]::Delete("$env:APPDATA\uv\python\cpython-3.13-windows-x86_64-none", $false)
+> ```
+
+### 3.3 Connect Serena to Codex
+
+```bash
+codex mcp add serena -- serena start-mcp-server --project-from-cwd --context=codex
+codex mcp list
+```
+
+`serena setup codex` also exists, but it fails when `codex` is not on PATH.
+
+### 3.4 Connect Serena to Claude Code
+
+User scope, all projects:
+
+```bash
+claude mcp add --scope user serena -- serena start-mcp-server --context claude-code --project-from-cwd
+```
+
+Per project instead — commit this as `.mcp.json` in the repository root:
+
+```json
+{
+  "mcpServers": {
+    "serena": {
+      "command": "serena",
+      "args": ["start-mcp-server", "--context", "claude-code", "--project-from-cwd"]
+    }
+  }
+}
+```
+
+> Do not hand-edit `~/.claude.json` while a Claude Code session is running. The
+> session holds that file and will overwrite external edits when it exits —
+> leaving a configuration that looks installed but is not.
+
+---
+
+## 4. Language-layer tooling
+
+`AGENTS.md` fixes the seven gauntlet **layers**; this section suggests the
+tools. Fill the actual commands into the PROJECT LAYER of `AGENTS.md`. If a
+layer has no tool in your language, write `not available` and the reason —
+that becomes the Structural blind spot in every EVIDENCE report.
+
+One rule outranks tool choice: **a layer must be able to fail.** A coverage run
+without a threshold flag prints a number and exits 0 — it is decoration, not a
+layer.
+
+### Python
+
+| Layer | Tool | Command |
+|---|---|---|
+| Tests | pytest | `pytest -q` |
+| Types | mypy / pyright | `mypy <pkg>` |
+| Lint + format | ruff | `ruff check . && ruff format --check .` |
+| Coverage | coverage.py + diff-cover | `pytest --cov=<pkg> --cov-branch --cov-fail-under=<n>` |
+| Mutation | mutmut | `mutmut run` |
+| Property | hypothesis | `@given(...)` |
+| Cleanup | ruff + vulture | `ruff check --select F401,F811,F841 . && vulture <pkg>` |
+
+Architecture: **import-linter** (`lint-imports`) enforces the layer contract in
+`ARCHITECTURE.md` and rejects cycles. This is the deterministic check that a
+prompt rule cannot provide.
+
+### JavaScript / TypeScript
+
+| Layer | Tool | Command |
+|---|---|---|
+| Tests | vitest / jest | `npx vitest run` |
+| Types | tsc | `npx tsc --noEmit` |
+| Lint + format | eslint | `npx eslint .` |
+| Coverage | vitest coverage | `npx vitest run --coverage` with thresholds configured |
+| Mutation | Stryker | `npx stryker run` (scope to changed files) |
+| Property | fast-check | `fc.assert(fc.property(...))` |
+| Cleanup | knip | `npx knip` |
+
+Architecture: **dependency-cruiser** for forbidden edges and cycles.
+
+### C++
+
+| Layer | Tool | Command |
+|---|---|---|
+| Tests | GoogleTest / Catch2 via CTest | `ctest --output-on-failure` |
+| Types | the compiler | `cmake --build . -- -Werror` |
+| Lint + format | clang-tidy, clang-format | `clang-tidy` on changed files; `clang-format --dry-run --Werror` |
+| Coverage | llvm-cov / OpenCppCoverage | must set a threshold |
+| Mutation | mull | scope to changed translation units |
+| Property | RapidCheck | — |
+| Cleanup | include-what-you-use | `iwyu_tool.py` + `-Wunused` |
+
+Architecture: **clang-uml** renders include and dependency diagrams. Generate
+before and after a change and compare — a diff in the dependency graph that the
+SPEC did not call for is a finding.
+
+### Go
+
+Tests `go test ./... -race` · Types `go build ./...` · Lint
+`go vet ./... && staticcheck ./...` · Coverage `go test -coverprofile` with a
+threshold gate · Mutation no mature default, state it · Property `rapid` ·
+Cleanup `staticcheck` unused checks.
+
+### Rust
+
+Tests `cargo test` · Types `cargo check` · Lint `cargo clippy -- -D warnings` ·
+Coverage `cargo llvm-cov --branch --fail-under-lines <n>` · Mutation
+`cargo mutants --file <changed>` · Property `proptest` · Cleanup `cargo-udeps`.
+
+### Java
+
+Tests `./mvnw test` · Types `./mvnw compile` · Lint
+`./mvnw checkstyle:check spotless:check` · Coverage JaCoCo with a check rule ·
+Mutation PIT, scoped to changed classes · Property jqwik · Cleanup Checkstyle
+`UnusedImports` + SpotBugs.
+
+---
+
+## 5. Per-project setup
+
+Run once in every repository:
+
+1. `git init` if needed — the verifier needs an exact source state and the diff
+   review needs a baseline.
+2. Copy `CLAUDE.md`, `AGENTS.md`, `SETUP.md` from the baseline repository.
+3. Fill in the **PROJECT LAYER** of `AGENTS.md`. Leaving any `<FILL IN>` in
+   place is a setup defect.
+4. Write `ARCHITECTURE.md`: the allowed dependency direction and the forbidden
+   edges. Keep it short.
+5. Create `docs/development-status.md`.
+6. Wire the architecture check and the seven gauntlet layers into CI. Skills
+   guide, static analysis detects, **CI enforces** — a rule with no CI behind it
+   is a suggestion.
+
+## 6. Updating the baseline
+
+The general layer of every file is versioned and carries **no project-specific
+content**, so updating is a whole-section replacement — never a merge:
+
+```bash
+git -C <baseline-repo> pull
+```
+
+Then copy each general layer over the project's copy, leaving the PROJECT LAYER
+untouched. If a merge ever looks necessary, something project-specific leaked
+into the general layer; move it down instead.
+
+---
+
+## 7. Environment notes worth checking
+
+- `codex exec` is **read-only by default**. Writing requires
+  `-s workspace-write`. A silent "could not create the file" usually means this.
+- `codex doctor` reports sandbox provisioning, the search backend, and update
+  status. Run it after installing and after every Codex update.
+- If the sandbox reports a provisioning failure, isolation is weaker than these
+  rules assume. It must be recorded in the EVIDENCE Honest notes, and the git
+  checkpoint becomes the real safety net.
+- Codex writes UTF-8 correctly on a CP950 console; the file encoding and the
+  console code page are independent.
