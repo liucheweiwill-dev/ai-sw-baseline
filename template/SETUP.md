@@ -1,7 +1,7 @@
 # SETUP.md — Installing a Claude + Codex workstation
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.2.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v2.0.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- ============================================================ -->
@@ -16,8 +16,8 @@ Primary commands are Windows. macOS and Linux equivalents follow each one.
 Every step has a verification command — run it before moving on.
 
 **Scope: this file covers the workstation, once per machine.** Creating or
-updating a *project* from the baseline — copying these files, filling in the
-project layer, wiring CI — is a separate procedure: `BOOTSTRAP.md` in the
+updating a *project* from the baseline — copying these files, filling in
+`PROJECT.md`, wiring CI — is a separate procedure: `BOOTSTRAP.md` in the
 baseline repository.
 
 ---
@@ -177,8 +177,8 @@ Its security scan reports **Medium risk, 1 alert**, unlike the others. The
 cause is what it openly does: it ships Python scripts that run a subprocess (the
 behaviour-preservation oracle you give it) and delete files. An inspection of
 those scripts found no network access, no `eval`/`exec`, and no `os.system`.
-The practical safeguard is the git checkpoint required before the Cleanup layer
-runs. Remove it with:
+The practical safeguard is the checkpoint commit `AGENTS.md` §12 requires
+before the Cleanup layer runs. Remove it with:
 
 ```bash
 npx skills@latest remove -s exhaustive-code-slimmer -g -y
@@ -273,7 +273,7 @@ Per project instead — commit this as `.mcp.json` in the repository root:
 ## 4. Language-layer tooling
 
 `AGENTS.md` fixes the seven gauntlet **layers**; this section suggests the
-tools. Fill the actual commands into the PROJECT LAYER of `AGENTS.md`. If a
+tools. Fill the actual commands into `PROJECT.md`. If a
 layer has no tool in your language, write `not available` and the reason —
 that becomes the Structural blind spot in every EVIDENCE report.
 

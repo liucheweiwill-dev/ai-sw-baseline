@@ -1,11 +1,11 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.2.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v2.0.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
-<!-- To update: replace this whole section verbatim. Never merge. -->
-<!-- Project-specific content belongs in the PROJECT LAYER below.  -->
+<!-- To update: replace this whole file verbatim. Never merge.     -->
+<!-- Project-specific values live in PROJECT.md, never here.       -->
 <!-- ============================================================ -->
 
 This file is the single source of shared rules. `CLAUDE.md` holds only
@@ -32,16 +32,18 @@ then record `roles: single-agent (correlation not broken)`.
 ## 2. Workflow
 
 ```
-0. /grill-me                    human-invoked; Tier 3 or on request
-1. Claude writes SPEC
-2. Codex reviews feasibility    [dual-agent]
-3. HUMAN APPROVES SPEC          gate — a changed SPEC voids prior approval
-4. Codex: RED -> GREEN -> REFACTOR
-5. Codex runs the GAUNTLET
-6. Tier 3: independent verification
-7. Codex writes EVIDENCE
-8. Claude reads EVIDENCE, then reviews the diff line by line  [dual-agent]
-9. Claude updates development-status.md; human authorises the commit
+ 0. /grill-me                   human-invoked; Tier 3 or on request
+ 1. Claude writes SPEC
+ 2. Codex reviews feasibility   [dual-agent]
+ 3. HUMAN APPROVES SPEC         gate — a changed SPEC voids prior approval
+ 4. Codex, on a task branch:    RED -> GREEN -> REFACTOR
+ 5. Codex runs the GAUNTLET     checkpoint before the Cleanup layer  (§12)
+ 6. Codex checkpoints           this SHA is the verified source state
+ 7. Tier 3: verification        against that SHA, four blind inputs  (§11)
+ 8. Codex writes EVIDENCE       naming the SHA
+ 9. Claude reads EVIDENCE, then reviews the diff line by line  [dual-agent]
+10. Claude updates development-status.md;
+    HUMAN AUTHORISES THE MERGE to the main branch
 ```
 
 **An answer to a question is not an approval.** If the human answered a
@@ -78,7 +80,7 @@ order:
 ## Must NOT                     invariants that must survive; each maps into EVIDENCE
 ## Files to edit
 ## Do not modify
-## Setup plan                   tools to install, git checkpoint cadence,
+## Setup plan                   tools to install, extra checkpoints beyond the two in §12,
                                 files the gauntlet adds BY PATH,
                                 every new dependency + one-line justification
 ## Acceptance tests
@@ -110,8 +112,8 @@ The SPEC decides the plan; the human still decides each irreversible act.
 | **Cleanup** | unused imports/exports/dead files exit non-zero — a report-only check is not a layer |
 
 Every layer must be an executable check with a machine-evaluable result. A
-layer that cannot fail is not a layer. Concrete commands live in the PROJECT
-LAYER, never here.
+layer that cannot fail is not a layer. Concrete commands live in `PROJECT.md`,
+never here.
 
 **Cleanup asks one question:** *What code became unnecessary because of this
 change?* A replacement implementation must remove the superseded code in the
@@ -124,6 +126,7 @@ EVIDENCE replaces any other completion report. Required sections:
 ```markdown
 # Evidence Report — <task name>            (Tier 1 | 2 | 3)
 
+## Verified source state        the checkpoint SHA from §2 step 6, and its branch
 ## Roles                        dual-agent | single-agent (correlation not broken)
 ## Double-track                 both | diff-review skipped by human instruction |
                                 N/A (Tier 1) | N/A (single-agent)
@@ -246,7 +249,7 @@ behaves differently on two machines — never assume a default. What this
 baseline requires is the *behaviour*: an operation needing escalation must fail
 and be reported, never be auto-approved. Confirm the configured policy actually
 does that before delegating anything (`codex doctor` reports it), and record the
-policy in the project layer.
+policy in `PROJECT.md`.
 
 Do not pass `--add-dir` — the workspace is the blast radius.
 **`--dangerously-bypass-approvals-and-sandbox` is forbidden.**
@@ -275,22 +278,60 @@ capable than it.** A different model is what reduces the correlation; equal or
 greater capability is what makes the attack worth running. A cheaper, weaker
 model produces a verification that clears everything it failed to understand —
 worse than declaring no verification at all, because it reads as assurance.
-Both models are named in the project layer.
+Both models are named in `PROJECT.md`.
 
-The verifier receives exactly four inputs and nothing else: the task contract
-including every human-approved change, the approved SPEC, the repository at an
-exact source state (commit SHA), and the gauntlet entry point. No builder
-reasoning, defences, or suggestions.
+The verifier receives exactly four inputs and nothing else:
+
+1. **The approved SPEC**, at the revision the human approved — including every
+   revision approved since the first one. It is the whole contract; there is no
+   separate contract document.
+2. **The checkpoint SHA** from §2 step 6, and the branch it sits on.
+3. **The gauntlet commands** from `PROJECT.md`, as the table — every row,
+   including the `not available` ones, since a missing layer is exactly the sort
+   of gap the verifier exists to notice.
+4. **The task's `docs/<NNN-kebab-slug>/` directory**, for the SPEC's own
+   attachments if it has any.
+
+Nothing else. No builder reasoning, no defences, no suggestions, no EVIDENCE
+draft — the verifier is attacking the work, not reviewing the builder's account
+of it.
 
 *Known limitation:* the verifier shares a vendor with the builder, and by
 default the same human approves the SPEC they commissioned. Correlation is
 reduced, not eliminated. Say so in EVIDENCE and claim less.
 
-## 12. Files
+## 12. Checkpoints and branches
+
+**A checkpoint is a commit on the task branch.** Not a stash, not a tag, not a
+patch file — a commit, so it has a SHA that can be named, handed to a verifier,
+and reset to.
+
+Work happens on a task branch, never on the main branch. Checkpoint commits are
+free: they are working state, not the deliverable, and they need no
+authorisation. **The human authorises what reaches the main branch, not each
+commit on the way there** — that is the gate in §2 step 10.
+
+Two checkpoints are mandatory:
+
+- **Before the Cleanup layer runs.** Cleanup deletes files; the checkpoint is
+  its undo. Recovery is `git reset --hard <sha>` on the task branch, which is
+  the one context where that command needs no separate confirmation because it
+  is discarding only post-checkpoint work.
+- **Immediately before verification.** That SHA is the *verified source state*:
+  it is what the Tier 3 verifier is given, and EVIDENCE records it. Verifying a
+  dirty tree verifies nothing anyone can point at afterwards.
+
+The SPEC's `Setup plan` names any further checkpoints the task wants.
+
+A brand-new repository has no commits, so the first checkpoint is also the
+repository's first commit. Make it before implementation starts, not after.
+
+## 13. Files
 
 ```
-CLAUDE.md                       Claude-specific; points here
-AGENTS.md                       this file
+CLAUDE.md                       Claude-specific; points at AGENTS.md
+AGENTS.md                       this file. General layer only — replaced whole on update.
+PROJECT.md                      this project's values. Yours; never overwritten.
 ARCHITECTURE.md                 dependency direction + forbidden edges. Short. Long-lived.
 SETUP.md                        what to install; humans run the commands
 docs/<NNN-kebab-slug>/SPEC.md       frozen after approval; append to Revisions only
@@ -299,77 +340,37 @@ docs/development-status.md      cross-task decisions and their reasons;
                                 one result line per task. Not a second log.
 ```
 
-Every project is a git repository from its first commit. The verifier needs an
-exact source state and the diff review needs a baseline.
+`CLAUDE.md`, `AGENTS.md` and `SETUP.md` are general layer from top to bottom and
+are replaced whole when the baseline updates. `PROJECT.md` is never touched by
+an update — it is reconciled instead (§14).
+
+Every project is a git repository from its first commit.
 
 Written artifacts (SPEC, EVIDENCE, commit messages, this baseline) are in
 English.
 
-<!-- ============================================================ -->
-<!-- END GENERAL LAYER                                            -->
-<!-- ============================================================ -->
+## 14. The project layer
 
-<!-- ============================================================ -->
-<!-- PROJECT LAYER — every project MUST fill this in.             -->
-<!-- Leaving <FILL IN> in place is a setup defect.                -->
-<!-- ============================================================ -->
+`PROJECT.md` holds every value that differs between projects. **This file owns
+the list of fields; that file owns the answers.** Required fields:
 
-## Project
-
-<FILL IN — what this project is, in two or three sentences: what it does, who
-uses it, and what it deliberately does not do. Every project fills this in for
-itself; the baseline never ships a value here.>
-
-## Tech stack
-
-<FILL IN — language and version, framework, package manager, anything a
-version file pins.>
-
-## Commands
-
-```bash
-<FILL IN — install, build, test, lint, typecheck>
-```
-
-## Gauntlet commands
-
-Fill in one command per layer. Delete no row: if a layer cannot run in this
-project, write `not available` and the reason — that row becomes the
-Structural blind spot in every EVIDENCE report.
-
-| Layer | Command |
+| Section | Holds |
 |---|---|
-| Tests | `<FILL IN>` |
-| Types | `<FILL IN>` |
-| Lint + format | `<FILL IN>` |
-| Changed-line coverage | `<FILL IN — must include a threshold flag>` |
-| Mutation | `<FILL IN>` |
-| Property-based | `<FILL IN>` |
-| Cleanup | `<FILL IN — must exit non-zero on findings>` |
+| Project | what it is, who uses it, what it deliberately is not |
+| Tech stack | language and version, framework, package manager |
+| Commands | install, build, test, lint, typecheck |
+| Gauntlet commands | one row per layer in §5, plus the architecture check |
+| Branches | main branch name, task branch naming |
+| Agent models | builder and verifier models, effort per Tier, fallback, sandbox and approval policy in force |
+| Project-specific safety | anything beyond §10, or `none` |
 
-See `SETUP.md` for per-language tool suggestions.
+**Reconcile after every baseline update.** A new release may add a required
+field; replacing this file cannot deliver it, because this file is replaced and
+`PROJECT.md` is not. So after an update, compare `PROJECT.md` against the table
+above, append every missing section as `<FILL IN>`, and have a human fill it.
+`grep -c "FILL IN" PROJECT.md` returning 0 is what "reconciled" means.
 
-## Architecture
-
-Maintain `ARCHITECTURE.md` with the allowed dependency direction and the
-forbidden edges. Keep it short. Check every change against it.
-
-## Agent models
-
-Model names and effort levels change often and differ per account, so they are
-recorded here rather than in the general layer. See §11 for the rules these
-must satisfy.
-
-| Role | Model | Reasoning effort |
-|---|---|---|
-| Builder (Codex, Tier 2–3) | `<FILL IN>` | `<FILL IN — enough for implementation, the gauntlet, and the EVIDENCE mapping>` |
-| Builder (Codex, Tier 1) | same as above | `<FILL IN — lower; overridden per call, not configured>` |
-| Verifier (Tier 3) | `<FILL IN — a different model, not less capable than the builder's>` | `<FILL IN>` |
-
-Fallback when the builder model is unavailable: `<FILL IN, or `none`>`.
-
-## Project-specific safety
-
-<FILL IN — anything beyond the general operational boundaries: regulated data,
-code-level security checks for this stack, licence constraints. Write `none` if
-there is nothing.>
+Nothing in `PROJECT.md` is optional. A field that does not apply is filled with
+`not available` or `none` and a reason — never deleted, never left blank. A
+deleted row is indistinguishable from an oversight; a stated `none` is a
+decision.

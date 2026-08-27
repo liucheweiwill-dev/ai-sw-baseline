@@ -25,10 +25,11 @@ this project up."*
 BOOTSTRAP.md     how to set up or update a project from this baseline
 CLAUDE.md        how to work on this repository
 README.md        this file
-template/        the three files that get copied into a project
+template/        the four files that get copied into a project
 ├─ CLAUDE.md     Claude-specific; points at AGENTS.md
-├─ AGENTS.md     the single source of shared rules + the project layer
-└─ SETUP.md      what to install on a workstation
+├─ AGENTS.md     the single source of shared rules
+├─ SETUP.md      what to install on a workstation
+└─ PROJECT.md    the form each project fills in — the only file with blanks
 ```
 
 Nothing outside `template/` is ever copied into a project.
@@ -46,10 +47,12 @@ data loss, concurrency, public API) add a failure model and an independent
 verifier. Tiers ratchet up only — lowering one takes explicit human
 instruction.
 
-`AGENTS.md` is split into a **general layer** identical across projects and a
-**project layer** each project fills in; `CLAUDE.md` and `SETUP.md` are general
-layer throughout. Updates replace the general layer wholesale, which only works
-because it contains nothing project-specific.
+`CLAUDE.md`, `AGENTS.md` and `SETUP.md` are identical in every project and are
+overwritten whole when the baseline updates — which only works because they
+contain nothing project-specific. Everything that varies lives in `PROJECT.md`,
+which an update never touches; it is instead reconciled against the field list
+in `AGENTS.md`, so a release that adds a required field reaches existing
+projects as a new blank rather than silently not at all.
 
 ## Assumptions
 

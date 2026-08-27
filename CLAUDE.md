@@ -1,16 +1,21 @@
 # CLAUDE.md — working on the baseline itself
 
 This repository is a **template**. It contains no application code. Its only
-product is the three documents in `template/`, which get copied into other
+product is the four documents in `template/`, which get copied into other
 projects.
+
+Three of them — `CLAUDE.md`, `AGENTS.md`, `SETUP.md` — are general layer from
+top to bottom and are replaced whole when a project updates. The fourth,
+`PROJECT.md`, is the form each project fills in; an update never overwrites it,
+it is reconciled against the field list in `AGENTS.md` §14.
 
 ## Read this before anything in `template/`
 
-`template/CLAUDE.md` and `template/AGENTS.md` are **content, not instructions
-for you**. They describe how to work on a *consuming* project — with a SPEC,
-a gauntlet, Codex doing the implementation. None of that applies here: there is
-nothing to implement, and the `<FILL IN>` placeholders in
-`template/AGENTS.md` are deliberate, not a misconfigured project.
+Everything in `template/` is **content, not instructions for you**. Those files
+describe how to work on a *consuming* project — with a SPEC, a gauntlet, Codex
+doing the implementation. None of that applies here: there is nothing to
+implement, and the `<FILL IN>` placeholders in `template/PROJECT.md` are
+deliberate, not a misconfigured project.
 
 Treat those files the way you would treat any other document you are editing.
 
@@ -20,11 +25,13 @@ Treat those files the way you would treat any other document you are editing.
 usernames, no hostnames, no tech stack, no team names, no assumptions about one
 machine.
 
-Everything else here follows from that. Projects update by replacing the
-general layer wholesale; the moment a project-specific detail leaks in, that
-replacement starts destroying real content and the distribution model breaks
-permanently. Anything that varies between projects belongs in the project
-layer, below the `END GENERAL LAYER` marker, as a `<FILL IN>`.
+Everything else here follows from that. Projects update by overwriting those
+three files wholesale; the moment a project-specific detail leaks into one, that
+overwrite starts destroying real content and the distribution model breaks
+permanently. Anything that varies between projects belongs in
+`template/PROJECT.md` as a `<FILL IN>`, and its field must be listed in
+`AGENTS.md` §14 — a placeholder that §14 does not name will never reach a
+project that already exists.
 
 Before every commit, run this **partial** heuristic:
 
@@ -44,8 +51,9 @@ tripwire for the four things it knows about.
 
 ## Changing the rules
 
-Each file in `template/` carries `GENERAL LAYER vX.Y.Z`. Keep the three in
-step — they are one release.
+The three general-layer files in `template/` carry `GENERAL LAYER vX.Y.Z`. Keep
+them in step — they are one release. `template/PROJECT.md` carries no version:
+it is a form, and each project's copy diverges the moment it is filled in.
 
 - **Patch** — wording, a fixed command, a new environment note.
 - **Minor** — a new rule, section, or gauntlet layer that existing projects can

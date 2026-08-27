@@ -60,42 +60,52 @@ misattributed.
 
 ```bash
 git -C <project> rev-parse --git-dir || git -C <project> init
+git -C <project> rev-parse HEAD 2>/dev/null || echo "no commits yet"
 ```
 
-Not optional. The Tier 3 verifier needs an exact source state, the diff review
-needs a baseline, and the git checkpoint is the real safety net whenever the
-sandbox is degraded.
+Not optional. The Tier 3 verifier is handed a checkpoint SHA, the diff review
+needs a baseline, and checkpoint commits are the real safety net whenever the
+sandbox is degraded (`AGENTS.md` §12).
+
+**A repository with no commits has no SHA to hand anyone.** If `HEAD` does not
+resolve, the files you create in Steps 2–5 become the first commit, and the
+human authorises it before any task work starts. Ask which branch name they
+want as the main branch — it goes into `PROJECT.md` at Step 3, and every task
+branches off it.
 
 ## Step 2 — Copy the template files
 
-Copy these three, unchanged, into the project root:
+Copy these four, unchanged, into the project root:
 
 ```
-template/CLAUDE.md   ->  <project>/CLAUDE.md
-template/AGENTS.md   ->  <project>/AGENTS.md
-template/SETUP.md    ->  <project>/SETUP.md
+template/CLAUDE.md    ->  <project>/CLAUDE.md     general layer — never edited
+template/AGENTS.md    ->  <project>/AGENTS.md     general layer — never edited
+template/SETUP.md     ->  <project>/SETUP.md      general layer — never edited
+template/PROJECT.md   ->  <project>/PROJECT.md    the form you fill in at Step 3
 ```
 
-Copy them verbatim. The general layer is designed to need no edits; if you feel
-the urge to adjust one, the thing you want to change belongs in the project
-layer instead.
+Copy them verbatim. The first three are general layer from top to bottom and
+carry no project content at all; if you feel the urge to adjust one, the thing
+you want to change belongs in `PROJECT.md` instead.
 
 Do **not** copy this file, or the baseline's own `README.md` and `CLAUDE.md`.
 They describe the baseline repository, not the project.
 
-## Step 3 — Fill in the project layer
+## Step 3 — Fill in PROJECT.md
 
-Only `AGENTS.md` has a project layer. It sits below the `END GENERAL LAYER`
-marker and contains `<FILL IN>` placeholders. Ask the human for each; do not
-infer them from the directory name or from files you happen to find.
+`PROJECT.md` is the only file with `<FILL IN>` placeholders, and the only one an
+update never overwrites. Its required fields are defined in `AGENTS.md` §14.
+Ask the human for each; do not infer them from the directory name or from files
+you happen to find.
 
 | Section | What to ask |
 |---|---|
 | Project | What it does, who uses it, and what it deliberately does not do. |
 | Tech stack | Language and version, framework, package manager, version files. |
 | Commands | install, build, test, lint, typecheck. |
-| Gauntlet commands | One command per layer — see below. |
-| Agent models | Builder and verifier models, and the effort per Tier — see below. |
+| Gauntlet commands | One command per layer, plus the architecture check — see below. |
+| Branches | The main branch name, and how task branches are named. |
+| Agent models | Builder and verifier models, effort per Tier, fallback, and the sandbox/approval policy in force — see below. |
 | Project-specific safety | Regulated data, code-level security checks, licence limits. Write `none` if there is nothing. |
 
 **Gauntlet commands are the step that matters.** `template/SETUP.md` §4
@@ -195,11 +205,17 @@ rather than pretending the baseline is fully in force.
 ## Step 7 — Verify before reporting done
 
 ```bash
-grep -c "FILL IN" <project>/AGENTS.md     # must be 0
-ls <project>/CLAUDE.md <project>/AGENTS.md <project>/SETUP.md <project>/ARCHITECTURE.md
+grep -c "FILL IN" <project>/PROJECT.md    # must be 0
+ls <project>/CLAUDE.md <project>/AGENTS.md <project>/SETUP.md \
+   <project>/PROJECT.md <project>/ARCHITECTURE.md
 ls <project>/docs/development-status.md
 git -C <project> rev-parse --git-dir
+diff -q <project>/AGENTS.md <baseline>/template/AGENTS.md   # must be identical
 ```
+
+The last check matters: an `AGENTS.md` that differs from the baseline's copy
+cannot be replaced wholesale on the next update, and whatever was edited into it
+will be destroyed the first time someone tries.
 
 Then run every gauntlet command from the filled-in table once, on the current
 tree, and report which ones pass, fail, or are `not available`. A table of
@@ -212,23 +228,50 @@ you are waiting on them to run.
 
 ## Updating a project that already has the baseline
 
-The general layer is versioned and carries no project-specific content, so an
-update is a **whole-section replacement, never a merge**.
+An update is two operations: **overwrite**, then **reconcile**. Never a merge.
 
 ```bash
 git -C <baseline> pull
 ```
 
-Only `AGENTS.md` is split, and only it carries an `END GENERAL LAYER` marker:
-replace everything from `GENERAL LAYER` to `END GENERAL LAYER`, leaving the
-project layer below it untouched. `CLAUDE.md` and `SETUP.md` have no end marker
-because they are general layer from top to bottom — **overwrite those two files
-whole**.
+### 1. Overwrite the three general-layer files
 
-Compare the version line before and after, and tell the human what changed in
-the rules, not just that files were updated.
+```
+template/CLAUDE.md   ->  <project>/CLAUDE.md
+template/AGENTS.md   ->  <project>/AGENTS.md
+template/SETUP.md    ->  <project>/SETUP.md
+```
 
-If a merge ever looks necessary, something project-specific leaked into the
-general layer. Move it down into the project layer instead of merging; a merged
+Whole files, no markers, no splicing. They carry no project content, so there is
+nothing in them to preserve. **`PROJECT.md` is not in this list and is never
+overwritten.**
+
+### 2. Reconcile PROJECT.md against the new schema
+
+Overwriting cannot deliver a new required field, because the file that holds
+the answers is the one file the update does not touch. So compare `PROJECT.md`
+against the required-field table in the new `AGENTS.md` §14:
+
+- A field in §14 that `PROJECT.md` lacks: **append it as `<FILL IN>`** and ask
+  the human to fill it. Do not guess a value.
+- A section in `PROJECT.md` that §14 no longer lists: leave it, and tell the
+  human it is now unused. Deleting someone's recorded decision is not an
+  update's job.
+
+```bash
+grep -c "FILL IN" <project>/PROJECT.md    # must be 0 before you report done
+```
+
+This step is why a minor release can add a required field at all. Skip it and
+the project silently stays on the old schema while claiming the new version.
+
+### 3. Report what changed
+
+Compare the version line before and after and tell the human what changed **in
+the rules** — not just that files were updated. If the release added a gauntlet
+layer or an architecture check, Step 6's CI wiring needs revisiting too.
+
+If a merge ever looks necessary, something project-specific leaked into a
+general-layer file. Move it into `PROJECT.md` instead of merging; a merged
 general layer can never be replaced wholesale again, and the whole distribution
 model depends on that.

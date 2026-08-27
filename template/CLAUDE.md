@@ -1,17 +1,17 @@
 # CLAUDE.md
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.2.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v2.0.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim.                 -->
-<!-- All project-specific content lives in AGENTS.md.             -->
+<!-- All project-specific values live in PROJECT.md.               -->
 <!-- ============================================================ -->
 
 **Read `AGENTS.md` first.** It is the single source of shared rules: roles,
 workflow, Tiers, SPEC and EVIDENCE formats, the gauntlet, skill invocation,
-design rules, safety, and the project layer. This file adds only what is
-specific to Claude Code, and never repeats AGENTS.md.
+design rules, safety, and the field list for `PROJECT.md`. This file adds only
+what is specific to Claude Code, and never repeats AGENTS.md.
 
 ## Your role
 
