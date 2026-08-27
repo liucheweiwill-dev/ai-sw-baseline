@@ -60,6 +60,10 @@ Commands are written for Windows with macOS and Linux equivalents alongside.
 Documents in this repository, and the SPEC and EVIDENCE files it asks projects
 to produce, are in English.
 
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ## Credit
 
 The evidence-first loop is adapted from
