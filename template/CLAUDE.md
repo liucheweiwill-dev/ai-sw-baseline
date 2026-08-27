@@ -1,8 +1,9 @@
 # CLAUDE.md
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.1.1 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v1.2.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
+<!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim.                 -->
 <!-- All project-specific content lives in AGENTS.md.             -->
 <!-- ============================================================ -->
@@ -18,10 +19,18 @@ You are the **architecture lead**. You own architecture decisions, SPEC
 authoring, Tier proposal, EVIDENCE review, the line-by-line diff review, and
 `docs/development-status.md`.
 
-**You do not write feature code.** The exceptions are architectural work itself
-(writing SPECs, decomposing tasks) and cases where Codex is blocked by its
-environment. If you find yourself implementing, stop and check whether the task
-should have gone to Codex.
+**You do not write feature code.** Three exceptions:
+
+1. Architectural work itself — writing SPECs, decomposing tasks.
+2. Codex is blocked by its environment on this particular task.
+3. **Single-agent mode**: Codex is not installed or not reachable at all. You
+   then take both roles per AGENTS.md §0, implement the SPEC yourself, and the
+   EVIDENCE records `roles: single-agent (correlation not broken)`. Say plainly
+   that the review lost its second pair of eyes; do not quietly proceed as if
+   nothing changed.
+
+If you find yourself implementing outside these, stop and check whether the
+task should have gone to Codex.
 
 ## Before you plan
 

@@ -3,6 +3,12 @@
 You are an agent that has been pointed at this repository and asked to set up
 or update a project. Follow this file in order. It is the whole procedure.
 
+**Shell.** Every command here is POSIX shell. On Windows that means Git Bash,
+which ships with Git — not `cmd.exe`, and not PowerShell, where `grep` does not
+exist and Windows PowerShell 5.1 rejects `||`. Translate rather than improvise
+if you are running somewhere else, and say which shell you used.
+`template/SETUP.md` is the file that carries per-platform install commands.
+
 **Two hard rules before you start.**
 
 1. **Install nothing automatically.** Where a step needs software, show the
@@ -22,18 +28,33 @@ Establish, from the human, before touching any file:
 - **New project** (no baseline files yet) or **update** (baseline files already
   present). For an update, jump to §Updating.
 
-Check whether the workstation is ready:
+Check whether the workstation is ready. **Every command here inspects what is
+already installed — none of them downloads or executes anything new.** In
+particular, do not reach for `npx skills@latest`: `npx` fetches and runs a
+mutable remote package, which is exactly the thing rule 1 forbids, and running
+it to check readiness would break the rule before setup has begun.
 
 ```bash
-npx skills@latest list -g
-git config --global --get-regexp "^user\."
+ls ~/.claude/skills ~/.agents/skills          # installed skills, no download
+git -C <project> config user.name             # effective identity, not global
+git -C <project> config user.email
+codex doctor                                  # auth, model access, sandbox, search
+serena --version                              # symbol navigation
+codex mcp list                                # Serena registered for Codex
+claude mcp list                               # Serena registered for Claude Code
 ```
 
-Expect `old-coder`, `ponytail-review`, `ponytail-audit`,
-`exhaustive-code-slimmer` on both agents, `grill-me` and `grilling` on Claude
-Code, and a configured git identity. Anything missing: point the human at
-`template/SETUP.md` and let them run it. Do not proceed to Step 3 with a
-half-configured machine — you will produce a project whose gauntlet cannot run.
+Expect: `old-coder`, `ponytail-review`, `ponytail-audit` and
+`exhaustive-code-slimmer` visible to both agents; `grill-me` and `grilling` for
+Claude Code; an identity whose email belongs to the account that will push;
+`codex doctor` reporting a reachable model and a sandbox policy that *fails*
+rather than auto-approves an escalation; and `serena` listed as an MCP server on
+both sides.
+
+Report every gap to the human with the matching command from `template/SETUP.md`
+and stop there. Do not proceed to Step 3 with a half-configured machine — you
+will produce a project whose gauntlet cannot run and whose commits are
+misattributed.
 
 ## Step 1 — Make it a git repository
 
@@ -89,20 +110,23 @@ suggests tools per language. Two rules when filling the table:
 Any tool named here that is not installed goes back to the human as a command
 from `SETUP.md` §4. You do not install it.
 
-**Agent models.** Read the account's actual options rather than naming models
-from memory — they change, and they differ per account:
+**Agent models.** Read the account's actual catalog rather than naming models
+from memory — it changes, and it differs per account:
 
 ```bash
-grep -E "^model|reasoning" ~/.codex/config.toml
+codex debug models                            # the catalog this account can use
+grep -E "^model|reasoning" ~/.codex/config.toml   # the configured defaults
 ```
 
-The configured model and effort are the builder's defaults. Then fill the table
-against the rules in `AGENTS.md` §11:
+The catalog is the set of legal answers; the config line is only today's
+default. Then fill the table against the rules in `AGENTS.md` §11:
 
 - The **verifier** takes a *different* model that is **not less capable** than
-  the builder's. Same generation, different name is the usual answer. Never a
-  cheaper mini variant — a weak adversary clears whatever it fails to
-  understand, and that reads as assurance.
+  the builder's. There is no machine-readable capability ordering, so this is
+  the human's judgement, not yours to infer from a name: show them the catalog,
+  say which model the builder uses, and ask which of the others is at least its
+  equal. Record their answer. Never accept a cheaper mini variant — a weak
+  adversary clears whatever it fails to understand, and that reads as assurance.
 - **Tier 1** takes a lower effort, applied per call with
   `-c model_reasoning_effort=<lower>`. Do not lower the configured default;
   Tier 2 and 3 need it.
@@ -146,9 +170,24 @@ in `docs/<NNN-kebab-slug>/` and are created by the workflow, not now.
 
 ## Step 6 — Wire CI
 
-Skills guide, static analysis detects, **CI enforces**. Put the seven gauntlet
-layers and the architecture check into the project's CI. Until that exists,
-every rule in `AGENTS.md` is a suggestion that a tired human can skip.
+Skills guide, static analysis detects, **CI enforces**. Put into the project's
+CI every gauntlet layer that has a real command, plus the architecture check if
+one exists. Until that exists, those rules are suggestions a tired human can
+skip.
+
+**A layer recorded as `not available` is not wired, and that is the correct
+outcome** — do not invent a command to fill the slot. CI runs what exists; the
+gaps live in the project layer table and reappear in every EVIDENCE report as
+the Structural blind spot. That is the exception mechanism, and it is the only
+one: a layer is either a command CI runs, or an explicit `not available` with a
+reason. Nothing sits in between.
+
+**CI cannot enforce the manual gates.** Human approval of the SPEC, a fresh
+verifier session, the four blind inputs, model independence, and the
+line-by-line diff review are not machine-checkable. They are enforced by the
+record they leave: the `Human approval` section of the SPEC, and the `Roles`,
+`Double-track` and `Independent verification` fields of EVIDENCE. Audit those
+fields; do not claim CI covers them.
 
 If the project has no CI yet, say so plainly and record it as a known gap
 rather than pretending the baseline is fully in force.
@@ -180,10 +219,11 @@ update is a **whole-section replacement, never a merge**.
 git -C <baseline> pull
 ```
 
-For each of `CLAUDE.md`, `AGENTS.md`, `SETUP.md`: replace everything from the
-`GENERAL LAYER` marker to the `END GENERAL LAYER` marker with the new version,
-leaving the project layer untouched. `CLAUDE.md` and `SETUP.md` are entirely
-general layer — replace the whole file.
+Only `AGENTS.md` is split, and only it carries an `END GENERAL LAYER` marker:
+replace everything from `GENERAL LAYER` to `END GENERAL LAYER`, leaving the
+project layer below it untouched. `CLAUDE.md` and `SETUP.md` have no end marker
+because they are general layer from top to bottom — **overwrite those two files
+whole**.
 
 Compare the version line before and after, and tell the human what changed in
 the rules, not just that files were updated.

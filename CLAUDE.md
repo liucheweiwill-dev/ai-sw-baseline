@@ -26,13 +26,21 @@ replacement starts destroying real content and the distribution model breaks
 permanently. Anything that varies between projects belongs in the project
 layer, below the `END GENERAL LAYER` marker, as a `<FILL IN>`.
 
-Before every commit:
+Before every commit, run this **partial** heuristic:
 
 ```bash
-grep -nE "C:\\\\|/home/|/Users/|([0-9]{1,3}\.){3}[0-9]{1,3}|@[a-z0-9.-]+\.[a-z]{2,}" template/*.md
+grep -nE "[A-Za-z]:\\\\|\\\\\\\\[A-Za-z]|/home/|/Users/|([0-9]{1,3}\.){3}[0-9]{1,3}|@[a-z0-9.-]+\.[a-z]{2,}" template/*.md
 ```
 
 Prose hits are fine. A real path, address, or host is not.
+
+**A clean run proves very little.** It catches absolute paths, UNC paths, IP
+addresses and email-like hosts — and nothing else. Bare usernames, hostnames,
+team or product names, a company's conventions, an assumed tech stack, an
+assumed directory layout: all of those pass. Those are found by reading the
+diff and asking "would this sentence still be true in someone else's
+repository?" Never report the grep as verification of the invariant; it is a
+tripwire for the four things it knows about.
 
 ## Changing the rules
 
@@ -49,6 +57,19 @@ A rule that no gauntlet layer or CI check can verify is guidance, and must say
 so. Do not write enforcement language the documents cannot back up — a rule
 that reads as mandatory but is never checked teaches everyone to ignore the
 ones that are.
+
+Two categories are exempt, and only these two:
+
+- **Safety boundaries** (AGENTS.md §10). "Never push without authorisation" is
+  mandatory and unverifiable by design; that is what a boundary is. Keep them
+  few, and keep them in §10 where their status is declared.
+- **Manual gates** — human approval of the SPEC, verifier freshness, the blind
+  inputs, the line-by-line review. These are mandatory but enforced by the
+  record they leave, not by a check. Every such rule must name the field that
+  records it, or it is unenforceable in practice as well as in principle.
+
+Anything outside those two that cannot be checked is written as a preference,
+in the language of a preference.
 
 `BOOTSTRAP.md` and `README.md` describe this repository and are never copied
 into a project. If you change how projects are set up, they change too.

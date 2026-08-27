@@ -46,9 +46,10 @@ data loss, concurrency, public API) add a failure model and an independent
 verifier. Tiers ratchet up only — lowering one takes explicit human
 instruction.
 
-Every file is split into a **general layer** that is identical across projects
-and a **project layer** that each project fills in. Updates replace the general
-layer wholesale, which only works because it contains nothing project-specific.
+`AGENTS.md` is split into a **general layer** identical across projects and a
+**project layer** each project fills in; `CLAUDE.md` and `SETUP.md` are general
+layer throughout. Updates replace the general layer wholesale, which only works
+because it contains nothing project-specific.
 
 ## Assumptions
 
@@ -56,7 +57,10 @@ Both Claude Code and Codex are available. Rules that need both are marked
 `[dual-agent]`; the rest still applies with a single agent, and the resulting
 EVIDENCE says so.
 
-Commands are written for Windows with macOS and Linux equivalents alongside.
+Install commands in `SETUP.md` are written for Windows with macOS and Linux
+equivalents alongside. Everything else — `BOOTSTRAP.md` and the maintenance
+checks — is POSIX shell, which on Windows means Git Bash.
+
 Documents in this repository, and the SPEC and EVIDENCE files it asks projects
 to produce, are in English.
 

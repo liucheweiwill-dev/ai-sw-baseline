@@ -1,8 +1,9 @@
 # SETUP.md — Installing a Claude + Codex workstation
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.1.1 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v1.2.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
+<!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- ============================================================ -->
 
 > **Agents: do not install anything automatically.**
@@ -48,7 +49,15 @@ produces commits attributed to nobody, or to whoever used the machine before.
 ```bash
 git config --global user.name  "<your name>"
 git config --global user.email "<the email verified on your git host account>"
-git config --global --get-regexp "^user\."
+```
+
+Verify the **effective** values from inside the project, not the global ones —
+a repository-local override wins, and that is exactly how commits end up
+attributed to the wrong person on a shared machine:
+
+```bash
+git -C <project> config user.name
+git -C <project> config user.email
 ```
 
 The email must be **verified on the account of your git host**, or the commits
@@ -89,6 +98,13 @@ gh auth setup-git      # run explicitly if you answered "No" above
 
 Multiple accounts on one machine: `gh auth login` again for the second account,
 then `gh auth switch` to change the active one.
+
+> **`gh auth switch` changes push authentication only.** It does not touch
+> `user.name` or `user.email`, so after switching, commits still carry the
+> previous account's identity while pushing as the new one — and the commits
+> land unattributed. Switching accounts means changing both: `gh auth switch`
+> *and* the identity in §1.1, set per-repository when the machine serves more
+> than one account.
 
 > **Trap — a machine that already pushed as a different account.**
 > Cached credentials outlive any change to `user.email`. On Windows they sit in
@@ -265,16 +281,32 @@ One rule outranks tool choice: **a layer must be able to fail.** A coverage run
 without a threshold flag prints a number and exits 0 — it is decoration, not a
 layer.
 
+**Changed-line coverage needs a comparison base.** Overall coverage can sit at
+90% while every line the change added is untested, so an overall-coverage gate
+does not implement this layer. Where a diff-aware tool exists it is given below.
+Where none does, record the layer as `not available (only overall coverage)`
+with the overall gate as a fallback command — the gap is then visible in every
+EVIDENCE report instead of being papered over by a passing number.
+
+**Installation.** Each language block starts with the install command for its
+tools. A human runs it. When an agent finds a tool missing, it shows that line
+and stops — it does not install. Claude Code and Codex themselves install from
+their own vendors' documentation; this file does not restate those.
+
 ### Python
+
+```bash
+pip install pytest mypy ruff pytest-cov diff-cover mutmut hypothesis vulture import-linter
+```
 
 | Layer | Tool | Command |
 |---|---|---|
 | Tests | pytest | `pytest -q` |
 | Types | mypy / pyright | `mypy <pkg>` |
 | Lint + format | ruff | `ruff check . && ruff format --check .` |
-| Coverage | coverage.py + diff-cover | `pytest --cov=<pkg> --cov-branch --cov-fail-under=<n>` |
-| Mutation | mutmut | `mutmut run` |
-| Property | hypothesis | `@given(...)` |
+| Changed-line coverage | coverage.py + diff-cover | `pytest --cov=<pkg> --cov-branch --cov-report=xml && diff-cover coverage.xml --compare-branch=<base> --fail-under=<n>` |
+| Mutation | mutmut | `mutmut run` — then `mutmut results`; survivors fail the layer |
+| Property | hypothesis | runs inside `pytest`; the layer is "the suite contains `@given` properties for the invariants in the SPEC" |
 | Cleanup | ruff + vulture | `ruff check --select F401,F811,F841 . && vulture <pkg>` |
 
 Architecture: **import-linter** (`lint-imports`) enforces the layer contract in
@@ -283,14 +315,18 @@ prompt rule cannot provide.
 
 ### JavaScript / TypeScript
 
+```bash
+npm i -D vitest typescript eslint @vitest/coverage-v8 @stryker-mutator/core fast-check knip dependency-cruiser
+```
+
 | Layer | Tool | Command |
 |---|---|---|
 | Tests | vitest / jest | `npx vitest run` |
 | Types | tsc | `npx tsc --noEmit` |
 | Lint + format | eslint | `npx eslint .` |
-| Coverage | vitest coverage | `npx vitest run --coverage` with thresholds configured |
-| Mutation | Stryker | `npx stryker run` (scope to changed files) |
-| Property | fast-check | `fc.assert(fc.property(...))` |
+| Changed-line coverage | vitest coverage | `not available` out of the box — v8 coverage has no diff mode. Gate overall coverage with `coverage.thresholds` in the config and record the gap. |
+| Mutation | Stryker | `npx stryker run` with `mutate` scoped to the changed files |
+| Property | fast-check | runs inside the test suite; the layer is "properties exist for the SPEC's invariants" |
 | Cleanup | knip | `npx knip` |
 
 Architecture: **dependency-cruiser** for forbidden edges and cycles.
@@ -300,12 +336,16 @@ Architecture: **dependency-cruiser** for forbidden edges and cycles.
 | Layer | Tool | Command |
 |---|---|---|
 | Tests | GoogleTest / Catch2 via CTest | `ctest --output-on-failure` |
-| Types | the compiler | `cmake --build . -- -Werror` |
+| Types | the compiler | configure `-Werror` once, then build normally: `cmake -S . -B build -DCMAKE_CXX_FLAGS="-Werror" && cmake --build build` |
 | Lint + format | clang-tidy, clang-format | `clang-tidy` on changed files; `clang-format --dry-run --Werror` |
-| Coverage | llvm-cov / OpenCppCoverage | must set a threshold |
+| Changed-line coverage | llvm-cov / OpenCppCoverage | `not available` as a diff gate — emit a report and set an overall threshold, and record the gap |
 | Mutation | mull | scope to changed translation units |
-| Property | RapidCheck | — |
-| Cleanup | include-what-you-use | `iwyu_tool.py` + `-Wunused` |
+| Property | RapidCheck | runs inside the test binary; the layer is "properties exist for the SPEC's invariants" |
+| Cleanup | include-what-you-use | `iwyu_tool.py -p build` plus `-Wunused` in the build flags |
+
+> `cmake --build . -- -Werror` does **not** work: arguments after `--` go to the
+> build backend, so Ninja rejects the flag and Make reads it as a Make option.
+> The compiler never sees it. Set it in the CMake flags as above.
 
 Architecture: **clang-uml** renders include and dependency diagrams. Generate
 before and after a change and compare — a diff in the dependency graph that the
@@ -313,30 +353,50 @@ SPEC did not call for is a finding.
 
 ### Go
 
+Install: `go install honnef.co/go/tools/cmd/staticcheck@latest`
+
 Tests `go test ./... -race` · Types `go build ./...` · Lint
-`go vet ./... && staticcheck ./...` · Coverage `go test -coverprofile` with a
-threshold gate · Mutation no mature default, state it · Property `rapid` ·
+`go vet ./... && staticcheck ./...` · Changed-line coverage `not available` —
+gate overall with `go test -coverprofile` plus a threshold script, record the
+gap · Mutation no mature default, record `not available` · Property `rapid` ·
 Cleanup `staticcheck` unused checks.
 
 ### Rust
 
+Install: `cargo install cargo-llvm-cov cargo-mutants cargo-udeps`
+
 Tests `cargo test` · Types `cargo check` · Lint `cargo clippy -- -D warnings` ·
-Coverage `cargo llvm-cov --branch --fail-under-lines <n>` · Mutation
+Changed-line coverage `not available` — gate overall with
+`cargo llvm-cov --branch --fail-under-lines <n>`, record the gap · Mutation
 `cargo mutants --file <changed>` · Property `proptest` · Cleanup `cargo-udeps`.
 
 ### Java
 
+Install: declare Checkstyle, Spotless, JaCoCo, PIT and jqwik as build plugins;
+there is no separate install step.
+
 Tests `./mvnw test` · Types `./mvnw compile` · Lint
-`./mvnw checkstyle:check spotless:check` · Coverage JaCoCo with a check rule ·
-Mutation PIT, scoped to changed classes · Property jqwik · Cleanup Checkstyle
-`UnusedImports` + SpotBugs.
+`./mvnw checkstyle:check spotless:check` · Changed-line coverage `not available`
+— JaCoCo check rules gate overall, record the gap · Mutation PIT, scoped to
+changed classes · Property jqwik · Cleanup Checkstyle `UnusedImports` +
+SpotBugs.
+
+### A language not listed here
+
+Do not improvise a table. Ask the human which tool fills each layer, and record
+`not available` with the reason for any layer their toolchain has no answer for.
+A guessed command that has never run is worse than an honest blank: it passes
+review as though the layer existed.
 
 ---
 
 ## 5. Environment notes worth checking
 
-- `codex exec` is **read-only by default**. Writing requires
-  `-s workspace-write`. A silent "could not create the file" usually means this.
+- **`codex exec` inherits its sandbox and approval policy from configuration**,
+  so there is no CLI default to rely on — the same command writes files on one
+  machine and refuses on another. Always pass `-s` explicitly. A rejected patch
+  reported as "blocked by read-only sandbox" means the policy in force was
+  read-only, not that the CLI has that default.
 - `codex doctor` reports sandbox provisioning, the search backend, and update
   status. Run it after installing and after every Codex update.
 - If the sandbox reports a provisioning failure, isolation is weaker than these
