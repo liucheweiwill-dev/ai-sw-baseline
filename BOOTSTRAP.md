@@ -74,6 +74,7 @@ infer them from the directory name or from files you happen to find.
 | Tech stack | Language and version, framework, package manager, version files. |
 | Commands | install, build, test, lint, typecheck. |
 | Gauntlet commands | One command per layer — see below. |
+| Agent models | Builder and verifier models, and the effort per Tier — see below. |
 | Project-specific safety | Regulated data, code-level security checks, licence limits. Write `none` if there is nothing. |
 
 **Gauntlet commands are the step that matters.** `template/SETUP.md` §4
@@ -87,6 +88,27 @@ suggests tools per language. Two rules when filling the table:
 
 Any tool named here that is not installed goes back to the human as a command
 from `SETUP.md` §4. You do not install it.
+
+**Agent models.** Read the account's actual options rather than naming models
+from memory — they change, and they differ per account:
+
+```bash
+grep -E "^model|reasoning" ~/.codex/config.toml
+```
+
+The configured model and effort are the builder's defaults. Then fill the table
+against the rules in `AGENTS.md` §11:
+
+- The **verifier** takes a *different* model that is **not less capable** than
+  the builder's. Same generation, different name is the usual answer. Never a
+  cheaper mini variant — a weak adversary clears whatever it fails to
+  understand, and that reads as assurance.
+- **Tier 1** takes a lower effort, applied per call with
+  `-c model_reasoning_effort=<lower>`. Do not lower the configured default;
+  Tier 2 and 3 need it.
+
+If the human does not know which models are available, that is a question for
+them and their provider, not a guess for you to record.
 
 ## Step 4 — Write ARCHITECTURE.md
 

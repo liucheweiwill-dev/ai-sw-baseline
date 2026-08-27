@@ -1,7 +1,7 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.0.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v1.1.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- To update: replace this whole section verbatim. Never merge. -->
 <!-- Project-specific content belongs in the PROJECT LAYER below.  -->
@@ -224,11 +224,31 @@ escalation must fail and be reported, not auto-approved. Do not pass
 `--add-dir` — the workspace is the blast radius. **`--dangerously-bypass-approvals-and-sandbox`
 is forbidden.**
 
+**Reasoning effort scales with the Tier, not with the caller's habit.** The
+configured effort applies to every invocation, so a Tier 1 typo costs the same
+as a Tier 3 concurrency change unless it is overridden per call. Override
+downward for Tier 1 rather than lowering the configured default, which the
+Tier 2 and 3 work needs:
+
+```
+codex exec -c model_reasoning_effort=<lower> -s workspace-write "<Tier 1 prompt>"
+```
+
+Never override *upward* silently on a Tier the SPEC set lower — if the work
+needs more reasoning than its Tier implies, the Tier is wrong. Raise it (§3).
+
 Verifier (Tier 3), a fresh session on a different model, read-only:
 
 ```
-codex exec -m <different-model> -s read-only "<verifier prompt>"
+codex exec -m <verifier-model> -s read-only "<verifier prompt>"
 ```
+
+**The verifier's model must differ from the builder's, and must not be less
+capable than it.** A different model is what reduces the correlation; equal or
+greater capability is what makes the attack worth running. A cheaper, weaker
+model produces a verification that clears everything it failed to understand —
+worse than declaring no verification at all, because it reads as assurance.
+Both models are named in the project layer.
 
 The verifier receives exactly four inputs and nothing else: the task contract
 including every human-approved change, the approved SPEC, the repository at an
@@ -306,6 +326,20 @@ See `SETUP.md` for per-language tool suggestions.
 
 Maintain `ARCHITECTURE.md` with the allowed dependency direction and the
 forbidden edges. Keep it short. Check every change against it.
+
+## Agent models
+
+Model names and effort levels change often and differ per account, so they are
+recorded here rather than in the general layer. See §11 for the rules these
+must satisfy.
+
+| Role | Model | Reasoning effort |
+|---|---|---|
+| Builder (Codex, Tier 2–3) | `<FILL IN>` | `<FILL IN — enough for implementation, the gauntlet, and the EVIDENCE mapping>` |
+| Builder (Codex, Tier 1) | same as above | `<FILL IN — lower; overridden per call, not configured>` |
+| Verifier (Tier 3) | `<FILL IN — a different model, not less capable than the builder's>` | `<FILL IN>` |
+
+Fallback when the builder model is unavailable: `<FILL IN, or `none`>`.
 
 ## Project-specific safety
 

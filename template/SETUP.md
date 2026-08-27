@@ -1,7 +1,7 @@
 # SETUP.md — Installing a Claude + Codex workstation
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.0.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v1.1.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- ============================================================ -->
 
