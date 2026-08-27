@@ -1,7 +1,7 @@
 # SETUP.md — Installing a Claude + Codex workstation
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.1.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v1.1.1 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- ============================================================ -->
 
@@ -344,3 +344,9 @@ Mutation PIT, scoped to changed classes · Property jqwik · Cleanup Checkstyle
   checkpoint becomes the real safety net.
 - Codex writes UTF-8 correctly on a CP950 console; the file encoding and the
   console code page are independent.
+- **A model at capacity reports it at the end of the run, not the start.** A
+  long `codex exec` can look like it completed while `ERROR: Selected model is
+  at capacity` sits in the last lines of its output, with the work partly done
+  or not done at all. Read the tail of every long run before treating it as
+  finished, and never let a run's own summary stand in for that check. Record
+  the fallback model in the project layer so there is something to switch to.

@@ -1,7 +1,7 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.1.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v1.1.1 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- To update: replace this whole section verbatim. Never merge. -->
 <!-- Project-specific content belongs in the PROJECT LAYER below.  -->

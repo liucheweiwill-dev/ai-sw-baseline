@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v1.1.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v1.1.1 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- To update: replace this whole file verbatim.                 -->
 <!-- All project-specific content lives in AGENTS.md.             -->
