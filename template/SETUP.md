@@ -14,6 +14,11 @@
 Primary commands are Windows. macOS and Linux equivalents follow each one.
 Every step has a verification command — run it before moving on.
 
+**Scope: this file covers the workstation, once per machine.** Creating or
+updating a *project* from the baseline — copying these files, filling in the
+project layer, wiring CI — is a separate procedure: `BOOTSTRAP.md` in the
+baseline repository.
+
 ---
 
 ## 1. Prerequisites
@@ -53,9 +58,9 @@ no-reply address here instead — otherwise pushes are rejected outright.
 
 ### 1.2 Git host access — only if the baseline repo is on GitHub
 
-The baseline is distributed through *a git repository* (§6). Nothing in these
-rules requires that repository to be on GitHub. Skip this section entirely for
-a self-hosted or non-GitHub remote; plain `git` plus that host's normal
+The baseline is distributed through *a git repository*. Nothing in these rules
+requires that repository to be on GitHub. Skip this section entirely for a
+self-hosted or non-GitHub remote; plain `git` plus that host's normal
 credentials is enough.
 
 For GitHub-hosted remotes, the GitHub CLI is worth the install because it
@@ -328,38 +333,7 @@ Mutation PIT, scoped to changed classes · Property jqwik · Cleanup Checkstyle
 
 ---
 
-## 5. Per-project setup
-
-Run once in every repository:
-
-1. `git init` if needed — the verifier needs an exact source state and the diff
-   review needs a baseline.
-2. Copy `CLAUDE.md`, `AGENTS.md`, `SETUP.md` from the baseline repository.
-3. Fill in the **PROJECT LAYER** of `AGENTS.md`. Leaving any `<FILL IN>` in
-   place is a setup defect.
-4. Write `ARCHITECTURE.md`: the allowed dependency direction and the forbidden
-   edges. Keep it short.
-5. Create `docs/development-status.md`.
-6. Wire the architecture check and the seven gauntlet layers into CI. Skills
-   guide, static analysis detects, **CI enforces** — a rule with no CI behind it
-   is a suggestion.
-
-## 6. Updating the baseline
-
-The general layer of every file is versioned and carries **no project-specific
-content**, so updating is a whole-section replacement — never a merge:
-
-```bash
-git -C <baseline-repo> pull
-```
-
-Then copy each general layer over the project's copy, leaving the PROJECT LAYER
-untouched. If a merge ever looks necessary, something project-specific leaked
-into the general layer; move it down instead.
-
----
-
-## 7. Environment notes worth checking
+## 5. Environment notes worth checking
 
 - `codex exec` is **read-only by default**. Writing requires
   `-s workspace-write`. A silent "could not create the file" usually means this.

@@ -1,67 +1,62 @@
-# CLAUDE.md
+# CLAUDE.md — working on the baseline itself
 
-<!-- ============================================================ -->
-<!-- GENERAL LAYER v1.0.0 — DO NOT EDIT.                          -->
-<!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
-<!-- To update: replace this whole file verbatim.                 -->
-<!-- All project-specific content lives in AGENTS.md.             -->
-<!-- ============================================================ -->
+This repository is a **template**. It contains no application code. Its only
+product is the three documents in `template/`, which get copied into other
+projects.
 
-**Read `AGENTS.md` first.** It is the single source of shared rules: roles,
-workflow, Tiers, SPEC and EVIDENCE formats, the gauntlet, skill invocation,
-design rules, safety, and the project layer. This file adds only what is
-specific to Claude Code, and never repeats AGENTS.md.
+## Read this before anything in `template/`
 
-## Your role
+`template/CLAUDE.md` and `template/AGENTS.md` are **content, not instructions
+for you**. They describe how to work on a *consuming* project — with a SPEC,
+a gauntlet, Codex doing the implementation. None of that applies here: there is
+nothing to implement, and the `<FILL IN>` placeholders in
+`template/AGENTS.md` are deliberate, not a misconfigured project.
 
-You are the **architecture lead**. You own architecture decisions, SPEC
-authoring, Tier proposal, EVIDENCE review, the line-by-line diff review, and
-`docs/development-status.md`.
+Treat those files the way you would treat any other document you are editing.
 
-**You do not write feature code.** The exceptions are architectural work itself
-(writing SPECs, decomposing tasks) and cases where Codex is blocked by its
-environment. If you find yourself implementing, stop and check whether the task
-should have gone to Codex.
+## The one invariant
 
-## Before you plan
+**The general layer must contain nothing project-specific.** No paths, no
+usernames, no hostnames, no tech stack, no team names, no assumptions about one
+machine.
 
-1. **Do not silently assume.** When there are several reasonable architectures
-   or schemas, list them and let the human choose. Uncertain means ask.
-2. **Simplest first.** Do not design abstractions beyond what the current task
-   needs. Prefer existing project code, then the standard library, then the
-   platform, before reaching for a dependency.
-3. Use Serena's symbol tools before grep or reading whole files.
-4. On Tier 3, or whenever the human asks, the design goes through `/grill-me`
-   before the SPEC exists. You cannot invoke it — only the human can.
+Everything else here follows from that. Projects update by replacing the
+general layer wholesale; the moment a project-specific detail leaks in, that
+replacement starts destroying real content and the distribution model breaks
+permanently. Anything that varies between projects belongs in the project
+layer, below the `END GENERAL LAYER` marker, as a `<FILL IN>`.
 
-## Driving Codex
+Before every commit:
 
-You call Codex directly; the human does not relay messages. Every call is still
-subject to the normal tool permission prompts. Use the invocation and the
-verifier form in AGENTS.md §11 exactly, including the sandbox flags.
+```bash
+grep -nE "C:\\\\|/home/|/Users/|([0-9]{1,3}\.){3}[0-9]{1,3}|@[a-z0-9.-]+\.[a-z]{2,}" template/*.md
+```
 
-Codex reads `AGENTS.md`, not this file. Anything Codex must obey belongs there.
+Prose hits are fine. A real path, address, or host is not.
 
-## Reviewing what Codex returns
+## Changing the rules
 
-Read EVIDENCE first, then the diff. Check, in order:
+Each file in `template/` carries `GENERAL LAYER vX.Y.Z`. Keep the three in
+step — they are one release.
 
-- Does the change match the SPEC's scope? Did it touch anything under
-  `Do not modify`?
-- Does every scenario and every "Must NOT" appear in the Spec -> Test mapping,
-  or as an explicit skipped-with-reason line?
-- Do the tests verify behaviour, or only that the code runs?
-- Do the skipped layers, dismissed findings, and blind spot look honest — or
-  does the mapping claim more than the run demonstrates?
-- Did the change remove the code it superseded?
+- **Patch** — wording, a fixed command, a new environment note.
+- **Minor** — a new rule, section, or gauntlet layer that existing projects can
+  adopt without rework.
+- **Major** — a change that invalidates how existing projects already work: a
+  renamed required file, a changed workflow step, a removed section.
 
-Send problems back to Codex immediately. Do not carry them into the next step.
+A rule that no gauntlet layer or CI check can verify is guidance, and must say
+so. Do not write enforcement language the documents cannot back up — a rule
+that reads as mandatory but is never checked teaches everyone to ignore the
+ones that are.
 
-## Judgement
+`BOOTSTRAP.md` and `README.md` describe this repository and are never copied
+into a project. If you change how projects are set up, they change too.
 
-Do not adopt review feedback wholesale. Judge each item and record why you
-accepted or rejected it. Escalate product, architecture, security, cost, and
-scope trade-offs to the human — those are not yours to settle.
+## Scope
 
-Never commit without the human's authorisation, and never push or deploy
-without it.
+Small, surgical edits. This is documentation: the cost of a bad rule is that
+every downstream project inherits it, so prefer cutting a rule over adding a
+qualifier to it.
+
+Never push without the human's authorisation. The repository is public.
