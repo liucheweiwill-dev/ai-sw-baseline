@@ -6,9 +6,12 @@
 <!--                                                               -->
 <!-- The required fields are defined in AGENTS.md §14. After a      -->
 <!-- baseline update, reconcile this file against that list:        -->
-<!-- append any missing field as <FILL IN> and fill it in.          -->
+<!-- append any missing field as a placeholder in the same form as  -->
+<!-- the ones below, then fill it in.                               -->
 <!--                                                               -->
-<!-- Leaving <FILL IN> anywhere is a setup defect.                  -->
+<!-- Any placeholder left unfilled is a setup defect. This comment  -->
+<!-- block deliberately avoids writing the placeholder token, so    -->
+<!-- that counting it in this file counts only real blanks.         -->
 <!-- ============================================================ -->
 
 ## Project

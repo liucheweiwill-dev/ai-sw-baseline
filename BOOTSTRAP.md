@@ -59,19 +59,20 @@ misattributed.
 ## Step 1 — Make it a git repository
 
 ```bash
-git -C <project> rev-parse --git-dir || git -C <project> init
-git -C <project> rev-parse HEAD 2>/dev/null || echo "no commits yet"
+git -C <project> rev-parse --git-dir || git -C <project> init -b <main-branch>
+git -C <project> rev-parse --verify HEAD 2>/dev/null || echo "no commits yet"
 ```
 
 Not optional. The Tier 3 verifier is handed a checkpoint SHA, the diff review
 needs a baseline, and checkpoint commits are the real safety net whenever the
 sandbox is degraded (`AGENTS.md` §12).
 
-**A repository with no commits has no SHA to hand anyone.** If `HEAD` does not
-resolve, the files you create in Steps 2–5 become the first commit, and the
-human authorises it before any task work starts. Ask which branch name they
-want as the main branch — it goes into `PROJECT.md` at Step 3, and every task
-branches off it.
+**A repository with no commits has no SHA to hand anyone.** Ask which branch
+name the human wants as the main branch before initialising, and pass it —
+`git init -b <name>` — because `git init` otherwise uses whatever
+`init.defaultBranch` happens to be on this machine, which differs between
+workstations. That name goes into `PROJECT.md` at Step 3, every task branches
+off it, and everything created in Steps 2–6 becomes its first commit at Step 7.
 
 ## Step 2 — Copy the template files
 
@@ -202,14 +203,43 @@ fields; do not claim CI covers them.
 If the project has no CI yet, say so plainly and record it as a known gap
 rather than pretending the baseline is fully in force.
 
-## Step 7 — Verify before reporting done
+## Step 7 — Commit the setup
+
+Everything so far is untracked. **A repository with no commit has no SHA**, and
+the workflow hands a SHA to the verifier, to EVIDENCE, and to every checkpoint
+reset — so setup is not finished until there is one.
+
+Show the human what will be committed, get their authorisation, then:
+
+```bash
+git -C <project> add -A
+git -C <project> commit -m "Adopt dual-agent baseline <version>"
+git -C <project> rev-parse --verify HEAD
+```
+
+This is a main-branch commit, so §10's rule applies in full: **the human
+authorises it.** Checkpoint commits on task branches come later and are free
+(`AGENTS.md` §12); this one is not a checkpoint.
+
+Confirm the branch matches what `PROJECT.md` records as the main branch. `git
+init` uses whatever the machine's `init.defaultBranch` says, which is not
+necessarily what the human answered at Step 3:
+
+```bash
+git -C <project> branch --show-current
+```
+
+Rename it now if it differs — `git branch -M <recorded-name>` — while the
+repository has exactly one commit and nothing depends on the old name.
+
+## Step 8 — Verify before reporting done
 
 ```bash
 grep -c "FILL IN" <project>/PROJECT.md    # must be 0
 ls <project>/CLAUDE.md <project>/AGENTS.md <project>/SETUP.md \
    <project>/PROJECT.md <project>/ARCHITECTURE.md
 ls <project>/docs/development-status.md
-git -C <project> rev-parse --git-dir
+git -C <project> rev-parse --verify HEAD  # a SHA, not just a .git directory
 diff -q <project>/AGENTS.md <baseline>/template/AGENTS.md   # must be identical
 ```
 

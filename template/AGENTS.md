@@ -1,7 +1,7 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v2.0.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v2.1.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim. Never merge.     -->
@@ -55,7 +55,7 @@ the answers in, state what changed, show the revised SPEC, ask again.
 
 | Tier | Scope | Requirements | Double-track |
 |---|---|---|---|
-| **1** trivial | typo, comment, config value | full suite + lint. No new test required, but state why it is untestable or already covered. | no — diff review only |
+| **1** trivial | typo, comment, config value | **two layers only: Tests and Lint + format.** No new test required, but state why the change is untestable or already covered. | no — diff review only |
 | **2** normal | bug fix, small feature | full loop. **A bug fix must start with a RED test that reproduces the bug.** | yes |
 | **3** high stakes | money, auth, data loss, concurrency, public API | full loop + **failure model** (list how this change can hurt; add a layer per mode) + independent verification | yes |
 
@@ -93,6 +93,17 @@ order:
 "Handles bad input" is not a scenario. `divide(1, 0) raises ZeroDivisionError
 with message X` is. An unjustified dependency is a SPEC defect.
 
+**Revisions edit the body.** What freezes on approval is the *revision*, not the
+file: once approved, revision *n* is the contract and nothing about it changes
+silently. When something must change, edit the body — scenarios, acceptance
+tests, commands, whatever the change touches — bump to revision *n+1*, record in
+`Revisions` what moved and why, and get it approved again. `Human approval`
+names the revision it applies to.
+
+Appending to `Revisions` while leaving a stale body is the failure this rule
+exists to prevent: the scenarios everyone reads say one thing, and the real
+contract hides in an appendix nobody maps tests against.
+
 Approving the SPEC settles *what* may change the environment, in one step,
 instead of re-litigating it later. It is not a substitute for the confirmation
 each individual command still needs: **an installation or a destructive command
@@ -114,6 +125,11 @@ The SPEC decides the plan; the human still decides each irreversible act.
 Every layer must be an executable check with a machine-evaluable result. A
 layer that cannot fail is not a layer. Concrete commands live in `PROJECT.md`,
 never here.
+
+**Which layers run at which Tier.** Tier 1 runs **Tests** and **Lint + format**,
+and nothing else. Tier 2 and Tier 3 run all seven. There is no partial set in
+between: a change that needs a third layer is not Tier 1, and the Tier is what
+moves (§3), not the layer list.
 
 **Cleanup asks one question:** *What code became unnecessary because of this
 change?* A replacement implementation must remove the superseded code in the
@@ -150,8 +166,19 @@ If the sandbox is degraded or unavailable, record it in Honest notes. Hiding
 the real isolation level of the execution environment falsifies the premise of
 the evidence.
 
-**Tier 1** uses a one-line report instead: a summary plus why no new test was
-needed.
+**Tier 1** uses a short report instead of the full schema — four lines, no more:
+
+```markdown
+# Evidence — <task name>  (Tier 1)
+
+Verified source state: <sha> on <branch>
+Tests:                 <command> -> pass
+Lint + format:         <command> -> pass
+No new test because:   <untestable, or already covered by <test name>>
+```
+
+The two commands are the Tier 1 layer set from §5. If a third layer was needed,
+this was never Tier 1.
 
 ## 7. Double-track review `[dual-agent]`
 
@@ -218,7 +245,11 @@ whitespace removal, and comment deletion are never "slimming".
 - Never push or deploy without explicit human authorisation.
 - Never read, write, or echo secrets, credentials, or tokens.
 - Destructive commands (`reset --hard`, `rm -rf`, force push, dropping data)
-  require explicit confirmation each time.
+  require explicit confirmation each time. **One exception, and only this one:**
+  `git reset --hard <sha>` back to a checkpoint on the current task branch,
+  where everything discarded was created after that checkpoint (§12). Confirm
+  anything wider — a different branch, a reset past the checkpoint, an untracked
+  file that predates it.
 - **Never modify a test to make it pass.** Fix the code or raise the defect.
 - Never install software automatically. See `SETUP.md`: list the command, let a
   human confirm.
@@ -314,12 +345,13 @@ commit on the way there** — that is the gate in §2 step 10.
 Two checkpoints are mandatory:
 
 - **Before the Cleanup layer runs.** Cleanup deletes files; the checkpoint is
-  its undo. Recovery is `git reset --hard <sha>` on the task branch, which is
-  the one context where that command needs no separate confirmation because it
-  is discarding only post-checkpoint work.
-- **Immediately before verification.** That SHA is the *verified source state*:
-  it is what the Tier 3 verifier is given, and EVIDENCE records it. Verifying a
-  dirty tree verifies nothing anyone can point at afterwards.
+  its undo. Recovery is `git reset --hard <sha>` on the task branch, under the
+  single exception §10 declares — read it there, not here.
+- **After the gauntlet, before EVIDENCE.** This is the *final source checkpoint*
+  at every Tier: the tree the gauntlet actually passed on. Its SHA goes into
+  EVIDENCE as the verified source state, and on Tier 3 it is what the verifier
+  is given. A gauntlet run against a tree nobody can name afterwards proves
+  nothing.
 
 The SPEC's `Setup plan` names any further checkpoints the task wants.
 
@@ -334,7 +366,7 @@ AGENTS.md                       this file. General layer only — replaced whole
 PROJECT.md                      this project's values. Yours; never overwritten.
 ARCHITECTURE.md                 dependency direction + forbidden edges. Short. Long-lived.
 SETUP.md                        what to install; humans run the commands
-docs/<NNN-kebab-slug>/SPEC.md       frozen after approval; append to Revisions only
+docs/<NNN-kebab-slug>/SPEC.md       revised in place; each revision re-approved (§4)
 docs/<NNN-kebab-slug>/EVIDENCE.md   rewritten on every gauntlet run
 docs/development-status.md      cross-task decisions and their reasons;
                                 one result line per task. Not a second log.
