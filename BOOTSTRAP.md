@@ -34,22 +34,33 @@ particular, do not reach for `npx skills@latest`: `npx` fetches and runs a
 mutable remote package, which is exactly the thing rule 1 forbids, and running
 it to check readiness would break the rule before setup has begun.
 
+**Run each of these exactly as written.** If one fails because the command is
+not on PATH, *that is the finding* — report it. Do not substitute an absolute
+path to make the check pass: the check is asking whether the tool is reachable
+the way the rest of the setup will reach it, and a full-path workaround answers
+a different question while looking like a green tick.
+
 ```bash
 ls ~/.claude/skills ~/.agents/skills          # installed skills, no download
-git -C <project> config user.name             # effective identity, not global
-git -C <project> config user.email
+git config --global user.name                 # global identity; the per-repo
+git config --global user.email                #   check belongs to Step 8
 codex doctor                                  # auth, model access, sandbox, search
-serena --version                              # symbol navigation
+serena --version                              # must resolve on PATH, not by full path
 codex mcp list                                # Serena registered for Codex
-claude mcp list                               # Serena registered for Claude Code
 ```
 
 Expect: `old-coder`, `ponytail-review`, `ponytail-audit` and
 `exhaustive-code-slimmer` visible to both agents; `grill-me` and `grilling` for
-Claude Code; an identity whose email belongs to the account that will push;
-`codex doctor` reporting a reachable model and a sandbox policy that *fails*
-rather than auto-approves an escalation; and `serena` listed as an MCP server on
-both sides.
+Claude Code; a configured identity whose email belongs to the account that will
+push; `codex doctor` reporting a reachable model and a sandbox policy that
+*fails* rather than auto-approves an escalation; and `serena` listed as an MCP
+server for Codex.
+
+**Claude Code's MCP registration cannot be checked from here.** A desktop-app
+install exposes no `claude` command, so there is no equivalent of `codex mcp
+list`. Step 2 writes the project's `.mcp.json`, which is what registers Serena
+for Claude Code in this project; confirm it from an interactive session with
+`/mcp` after setup, and do not block on it now.
 
 Report every gap to the human with the matching command from `template/SETUP.md`
 and stop there. Do not proceed to Step 3 with a half-configured machine — you
@@ -72,7 +83,7 @@ name the human wants as the main branch before initialising, and pass it —
 `git init -b <name>` — because `git init` otherwise uses whatever
 `init.defaultBranch` happens to be on this machine, which differs between
 workstations. That name goes into `PROJECT.md` at Step 3, every task branches
-off it, and everything created in Steps 2–6 becomes its first commit at Step 7.
+off it, and everything created in Steps 2–7 becomes its first commit at Step 8.
 
 ## Step 2 — Copy the template files
 
@@ -91,6 +102,25 @@ you want to change belongs in `PROJECT.md` instead.
 
 Do **not** copy this file, or the baseline's own `README.md` and `CLAUDE.md`.
 They describe the baseline repository, not the project.
+
+Then write `<project>/.mcp.json`, which is what registers Serena for Claude Code
+in this project — nothing else in the procedure does it, and Step 0 cannot check
+it:
+
+```json
+{
+  "mcpServers": {
+    "serena": {
+      "command": "serena",
+      "args": ["start-mcp-server", "--context", "claude-code", "--project-from-cwd"]
+    }
+  }
+}
+```
+
+The bare command is deliberate. An absolute path here works on exactly one
+machine and breaks for everyone who clones the repository — `SETUP.md` §3.2's
+`uv tool update-shell` is what makes the bare form resolve.
 
 ## Step 3 — Fill in PROJECT.md
 
@@ -179,7 +209,41 @@ One line per task once work starts: `<task-id> | Tier | double-track`, plus
 cross-task decisions and their reasons. Per-task SPEC and EVIDENCE files live
 in `docs/<NNN-kebab-slug>/` and are created by the workflow, not now.
 
-## Step 6 — Wire CI
+## Step 6 — Make the gauntlet runnable
+
+**The commands in `PROJECT.md` operate on something that does not exist yet.**
+Steps 1–5 produced git, documents and configuration; no source tree, no
+dependency manifest, no installed tools. Run any gauntlet command now and it
+fails for a reason that has nothing to do with the project's quality.
+
+So create the smallest skeleton that makes every command in the table actually
+execute. What that means is language-specific — `SETUP.md` §4 names the tools —
+but the shape is the same everywhere:
+
+1. **A dependency manifest** listing the gauntlet's own tools, and the install
+   command run once. Show the human the command; do not install unasked.
+2. **The source packages** the architecture contract names, so the architecture
+   check has something to check.
+3. **One trivial unit of real behaviour**, plus a test and a property test that
+   exercise it. Not the first task's work — scaffolding, named as such, that the
+   first task deletes. Without it the Mutation layer has nothing to mutate and
+   the Property layer collects nothing.
+4. **Tool configuration**: mutation scope, the property-test marker, coverage
+   source, the architecture contract.
+5. **A `.gitignore`** covering the virtual environment, caches, and every
+   artefact the gauntlet writes — coverage reports, mutation caches. Without it
+   the first commit swallows the whole toolchain.
+
+Then run every command in the table and fix the configuration until they pass.
+**Failures here are toolchain failures and belong to setup**, not to the first
+task. Discovering them now is the entire point of this step: a first SPEC that
+also has to make eight tools work for the first time cannot tell you which of
+its failures are about the code.
+
+One layer may legitimately not pass here: a `CI only` row (`AGENTS.md` §5)
+cannot run on this workstation at all. Record it and move on.
+
+## Step 7 — Wire CI
 
 Skills guide, static analysis detects, **CI enforces**. Put into the project's
 CI every gauntlet layer that has a real command, plus the architecture check if
@@ -203,16 +267,28 @@ fields; do not claim CI covers them.
 If the project has no CI yet, say so plainly and record it as a known gap
 rather than pretending the baseline is fully in force.
 
-## Step 7 — Commit the setup
+## Step 8 — Commit the setup
 
 Everything so far is untracked. **A repository with no commit has no SHA**, and
 the workflow hands a SHA to the verifier, to EVIDENCE, and to every checkpoint
 reset — so setup is not finished until there is one.
 
-Show the human what will be committed, get their authorisation, then:
+First check the identity that will actually be recorded. Step 0 could only see
+the global setting, because the repository did not exist yet; now it does, and a
+repository-local override would silently win:
 
 ```bash
-git -C <project> add -A
+git -C <project> config user.name     # effective values, not global
+git -C <project> config user.email
+```
+
+Then show the human what will be committed — `git -C <project> add -A` followed
+by `git -C <project> diff --cached --name-only`, so they see the list before it
+becomes history rather than after. Nothing from the gauntlet's own output should
+appear in it; if caches or coverage reports do, the `.gitignore` from Step 6 is
+incomplete. Get their authorisation, then:
+
+```bash
 git -C <project> commit -m "Adopt dual-agent baseline <version>"
 git -C <project> rev-parse --verify HEAD
 ```
@@ -232,7 +308,7 @@ git -C <project> branch --show-current
 Rename it now if it differs — `git branch -M <recorded-name>` — while the
 repository has exactly one commit and nothing depends on the old name.
 
-## Step 8 — Verify before reporting done
+## Step 9 — Verify before reporting done
 
 ```bash
 grep -c "FILL IN" <project>/PROJECT.md    # must be 0
@@ -299,7 +375,7 @@ the project silently stays on the old schema while claiming the new version.
 
 Compare the version line before and after and tell the human what changed **in
 the rules** — not just that files were updated. If the release added a gauntlet
-layer or an architecture check, Step 6's CI wiring needs revisiting too.
+layer or an architecture check, Step 7's CI wiring needs revisiting too.
 
 If a merge ever looks necessary, something project-specific leaked into a
 general-layer file. Move it into `PROJECT.md` instead of merging; a merged

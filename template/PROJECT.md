@@ -33,9 +33,11 @@ version file pins.>
 
 ## Gauntlet commands
 
-One command per layer. Delete no row: if a layer cannot run in this project,
-write `not available` and the reason — that row becomes the Structural blind
-spot in every EVIDENCE report, and CI wires only the rows that have commands.
+One command per layer, in one of the three states from `AGENTS.md` §5: a
+command, `CI only` with the platform limit named, or `not available` with the
+reason. **Delete no row.** A `not available` row becomes the Structural blind
+spot in every EVIDENCE report; a `CI only` row is checked, just not here. CI
+wires everything except `not available`.
 
 | Layer | Command |
 |---|---|

@@ -1,7 +1,7 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v2.1.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v2.2.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim. Never merge.     -->
@@ -131,6 +131,20 @@ and nothing else. Tier 2 and Tier 3 run all seven. There is no partial set in
 between: a change that needs a third layer is not Tier 1, and the Tier is what
 moves (§3), not the layer list.
 
+**Where a layer runs is part of its definition.** Each row in `PROJECT.md` is in
+one of three states, and the third exists because a tool can be real and still
+refuse to run on the machine you are sitting at:
+
+| State | Meaning |
+|---|---|
+| a command | runs on the workstation and in CI |
+| **`CI only`** | the tool does not run on this workstation's platform, but does run in CI. Name the platform limit. |
+| `not available` | no tool fills this layer in this project at all. Name why. |
+
+A `CI only` layer is **not** a skipped layer and **not** a blind spot: it ran,
+somewhere, and the EVIDENCE says where. Treating it as either understates or
+overstates what was actually checked.
+
 **Cleanup asks one question:** *What code became unnecessary because of this
 change?* A replacement implementation must remove the superseded code in the
 same change unless backward compatibility is explicitly required.
@@ -148,9 +162,11 @@ EVIDENCE replaces any other completion report. Required sections:
                                 N/A (Tier 1) | N/A (single-agent)
 ## Spec -> Test mapping         every scenario and every "Must NOT" -> a test, a layer,
                                 or an explicit skipped-with-reason line. Never silently absent.
-## Gauntlet                     final fresh run, per layer, with the command and its output
+## Gauntlet                     final fresh run, per layer, with the command, where it
+                                ran (workstation or CI), and its output
 ## Independent verification     Tier 3; if not performed, say so explicitly
-## Layers not run as specified  split three ways: not applicable / not available / skipped
+## Layers not run as specified  split four ways: not applicable / not available /
+                                CI only, not reproduced here / skipped
 ## Dismissed review findings    one line each, with the reason
 ## Structural blind spot        a layer this project cannot run at all
 ## Honest notes                 anything that lowers the confidence this report can claim
