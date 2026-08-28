@@ -1,7 +1,7 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v2.2.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v2.3.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim. Never merge.     -->
@@ -422,3 +422,27 @@ Nothing in `PROJECT.md` is optional. A field that does not apply is filled with
 `not available` or `none` and a reason — never deleted, never left blank. A
 deleted row is indistinguishable from an oversight; a stated `none` is a
 decision.
+
+**`PROJECT.md` carries no instructions, only answers.** Everything about *how*
+to fill it in lives here, because this file is overwritten on update and that
+one is not. Guidance written into `PROJECT.md` would freeze at whatever release
+created the project and then quietly contradict this section — a form that
+disagrees with its own instructions, with nothing to detect the drift. That is
+also why reconciliation compares sections and not prose: there is no prose there
+to compare.
+
+How to fill each field:
+
+- **Gauntlet commands** — one row per layer in §5, in one of the three states
+  defined there: a command, `CI only` with the platform limit named, or `not
+  available` with the reason. Delete no row. Add the architecture check as its
+  own line. `SETUP.md` §4 suggests tools and gives install commands per
+  language.
+- **Changed-line coverage** needs both a comparison base and a threshold, or it
+  cannot fail and is not a layer.
+- **Cleanup** must exit non-zero on findings; a report-only run is not a layer.
+- **Agent models** — the verifier is a different model that a human has judged
+  to be at least the builder's equal (§11). Record the judgement, not an
+  inference from the name.
+- **Project-specific safety** — anything beyond §10. Write `none` if there is
+  nothing; do not leave it empty.

@@ -371,6 +371,12 @@ grep -c "FILL IN" <project>/PROJECT.md    # must be 0 before you report done
 This step is why a minor release can add a required field at all. Skip it and
 the project silently stays on the old schema while claiming the new version.
 
+Comparing sections is enough **because `PROJECT.md` contains no instructions**,
+only answers — all guidance lives in `AGENTS.md` §14, which the overwrite above
+delivers. If you ever find explanatory prose inside a project's `PROJECT.md`, it
+is stale by construction: it froze at whatever release created that project.
+Delete it and point at §14.
+
 ### 3. Report what changed
 
 Compare the version line before and after and tell the human what changed **in
