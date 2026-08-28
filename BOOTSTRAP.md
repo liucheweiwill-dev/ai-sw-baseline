@@ -355,12 +355,25 @@ overwritten.**
 ### 2. Reconcile PROJECT.md against the new schema
 
 Overwriting cannot deliver a new required field, because the file that holds
-the answers is the one file the update does not touch. So compare `PROJECT.md`
-against the required-field table in the new `AGENTS.md` §14:
+the answers is the one file the update does not touch.
 
-- A field in §14 that `PROJECT.md` lacks: **append it as `<FILL IN>`** and ask
-  the human to fill it. Do not guess a value.
-- A section in `PROJECT.md` that §14 no longer lists: leave it, and tell the
+**Compare against `template/PROJECT.md`, not against §14's list of sections.**
+§14 says what the fields *mean*; the template is what they *look like*. A
+release can add a table row or a trailing field inside a section that already
+exists, and a section-level comparison reports no gaps while the project quietly
+stays on the old shape. Compare the skeletons:
+
+```bash
+skeleton() { grep -oE '^## .+|^\| [^|]+ \||^[A-Z][A-Za-z ]+:' "$1" | sed 's/ *|$//; s/^| *//'; }
+diff <(skeleton <baseline>/template/PROJECT.md) <(skeleton <project>/PROJECT.md)
+```
+
+Read the diff rather than trusting it — row *labels* must match, row *values*
+will not, and the helper cannot tell them apart. Then:
+
+- A heading, table row or field in the template that `PROJECT.md` lacks:
+  **append it as a placeholder** and ask the human to fill it. Never guess.
+- Something in `PROJECT.md` the template no longer has: leave it, and tell the
   human it is now unused. Deleting someone's recorded decision is not an
   update's job.
 
@@ -371,11 +384,10 @@ grep -c "FILL IN" <project>/PROJECT.md    # must be 0 before you report done
 This step is why a minor release can add a required field at all. Skip it and
 the project silently stays on the old schema while claiming the new version.
 
-Comparing sections is enough **because `PROJECT.md` contains no instructions**,
-only answers — all guidance lives in `AGENTS.md` §14, which the overwrite above
-delivers. If you ever find explanatory prose inside a project's `PROJECT.md`, it
-is stale by construction: it froze at whatever release created that project.
-Delete it and point at §14.
+`PROJECT.md` holds no instructions, only answers — all guidance lives in
+`AGENTS.md` §14, which the overwrite above delivers. If you find explanatory
+prose inside a project's `PROJECT.md`, it is stale by construction: it froze at
+whatever release created that project. Delete it and point at §14.
 
 ### 3. Report what changed
 
