@@ -49,9 +49,14 @@ Architecture check: `<FILL IN>`
 
 | Role | Model | Reasoning effort |
 |---|---|---|
-| Builder, Tier 2–3 | `<FILL IN>` | `<FILL IN>` |
-| Builder, Tier 1 | same as above | `<FILL IN>` |
+| Builder, Tier 1 | `<FILL IN>` | `<FILL IN>` |
+| Builder, Tier 2 | `<FILL IN>` | `<FILL IN>` |
+| Builder, Tier 3 | `<FILL IN>` | `<FILL IN>` |
 | Verifier, Tier 3 | `<FILL IN>` | `<FILL IN>` |
+
+Configured default effort: `<FILL IN>`
+
+Capability gap between builder and verifier: `<FILL IN>`
 
 Fallback when the builder model is unavailable: `<FILL IN>`
 
