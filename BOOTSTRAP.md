@@ -342,15 +342,47 @@ git -C <baseline> pull
 
 ### 1. Overwrite the three general-layer files
 
+**First confirm there is nothing to lose.** The overwrite is unconditional and
+silent. That these files carry no project content is an assumption about how the
+project has been treated, not a fact about the files in front of you — and the
+closing note below, *if a merge ever looks necessary something leaked*, describes
+a situation nothing else in this procedure would let you discover.
+
+```bash
+git -C <project> log --oneline -- CLAUDE.md AGENTS.md SETUP.md
+```
+
+Every commit listed should be a baseline adoption or a baseline update. Any other
+commit edited a general-layer file, and whatever it added is what the overwrite
+is about to destroy.
+
+To see the content, diff the project's copy against the release its version line
+names, taken from this repository's history:
+
+```bash
+git -C <baseline> show <that-release>:template/AGENTS.md   | diff --strip-trailing-cr - <project>/AGENTS.md
+```
+
+**`--strip-trailing-cr` is not optional.** Where the two repositories disagree
+about line endings — a CRLF working tree on one side and LF blobs on the other is
+enough — a plain `diff` reports every line of every file as changed while nothing
+has leaked. That false positive points straight at merging, which is the one
+thing this procedure forbids, so the check fails towards its own worst outcome.
+
+If something did leak, move it into `PROJECT.md` first. Do not merge, and do not
+overwrite until it is out.
+
+Then overwrite:
+
 ```
 template/CLAUDE.md   ->  <project>/CLAUDE.md
 template/AGENTS.md   ->  <project>/AGENTS.md
 template/SETUP.md    ->  <project>/SETUP.md
 ```
 
-Whole files, no markers, no splicing. They carry no project content, so there is
-nothing in them to preserve. **`PROJECT.md` is not in this list and is never
-overwritten.**
+Whole files, no markers, no splicing. Once the check above is clean they hold
+nothing of the project's, so there is nothing in them to preserve.
+**`PROJECT.md` is not in this list and is never overwritten.**
 
 ### 2. Reconcile PROJECT.md against the new schema
 
@@ -389,11 +421,27 @@ the project silently stays on the old schema while claiming the new version.
 prose inside a project's `PROJECT.md`, it is stale by construction: it froze at
 whatever release created that project. Delete it and point at §14.
 
-### 3. Report what changed
+### 3. Report what changed, and correct what the release invalidated
 
 Compare the version line before and after and tell the human what changed **in
 the rules** — not just that files were updated. If the release added a gauntlet
 layer or an architecture check, Step 7's CI wiring needs revisiting too.
+
+**Then fix what the release made untrue in the project's own files.** A release
+usually closes findings the project itself filed, and the overwrite touches none
+of the places those are recorded:
+
+- `docs/development-status.md` — findings listed as open against the baseline
+  that this release fixed. Move them. A project that keeps claiming defects a
+  release closed is worse than one that never filed any, because the next task's
+  author has no way to tell which entries are still true.
+- `PROJECT.md` — any decision recorded as a reading of, or a workaround for, a
+  rule this release changed. The decision often still holds while the reason
+  given for it no longer does.
+
+Neither file is overwritten, so neither corrects itself, and a reconcile that
+only adds missing fields will not notice. This is part of the update, not tidying
+afterwards.
 
 If a merge ever looks necessary, something project-specific leaked into a
 general-layer file. Move it into `PROJECT.md` instead of merging; a merged
