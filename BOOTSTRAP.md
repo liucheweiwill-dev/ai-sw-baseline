@@ -316,12 +316,18 @@ ls <project>/CLAUDE.md <project>/AGENTS.md <project>/SETUP.md \
    <project>/PROJECT.md <project>/ARCHITECTURE.md
 ls <project>/docs/development-status.md
 git -C <project> rev-parse --verify HEAD  # a SHA, not just a .git directory
-diff -q <project>/AGENTS.md <baseline>/template/AGENTS.md   # must be identical
+for f in CLAUDE.md AGENTS.md SETUP.md; do   # all three, silent when identical
+  diff --strip-trailing-cr "<baseline>/template/$f" "<project>/$f"
+done
 ```
 
-The last check matters: an `AGENTS.md` that differs from the baseline's copy
-cannot be replaced wholesale on the next update, and whatever was edited into it
-will be destroyed the first time someone tries.
+The last check matters, and it covers all three general-layer files rather than
+`AGENTS.md` alone: any one of them that differs from the baseline's copy cannot
+be replaced wholesale on the next update, and whatever was edited into it will
+be destroyed the first time someone tries. `--strip-trailing-cr` is there for
+the reason §Updating gives — without it a CRLF/LF disagreement reports every
+line as changed while nothing was edited, and that false positive reads exactly
+like a leak.
 
 Then run every gauntlet command from the filled-in table once, on the current
 tree, and report which ones pass, fail, or are `not available`. A table of

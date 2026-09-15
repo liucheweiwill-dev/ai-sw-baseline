@@ -61,6 +61,16 @@ it is a form, and each project's copy diverges the moment it is filled in.
 - **Major** — a change that invalidates how existing projects already work: a
   renamed required file, a changed workflow step, a removed section.
 
+**Every version bump gets a tag.** Annotate the commit that changes the version
+line as `vX.Y.Z`. `BOOTSTRAP.md`'s update procedure resolves a project's version
+line back to a commit — `git show <that-release>:template/AGENTS.md` — to see
+what leaked before it overwrites; with no tag there is nothing for that to
+resolve, and the reader's fallback is to guess at the history or skip the check.
+
+A commit that touches only `BOOTSTRAP.md` or `README.md` changes no version line
+and carries no version in its subject. Labelling one `(vX.Y.Z)` invents a
+release that no file records.
+
 A rule that no gauntlet layer or CI check can verify is guidance, and must say
 so. Do not write enforcement language the documents cannot back up — a rule
 that reads as mandatory but is never checked teaches everyone to ignore the
