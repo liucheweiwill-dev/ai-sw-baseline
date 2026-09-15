@@ -363,10 +363,15 @@ commit edited a general-layer file, and whatever it added is what the overwrite
 is about to destroy.
 
 To see the content, diff the project's copy against the release its version line
-names, taken from this repository's history:
+names, taken from this repository's history — all three, since the overwrite
+below replaces all three:
 
 ```bash
-git -C <baseline> show <that-release>:template/AGENTS.md   | diff --strip-trailing-cr - <project>/AGENTS.md
+for f in CLAUDE.md AGENTS.md SETUP.md; do
+  ref=$(git -C <baseline> show "<that-release>:template/$f") || {
+    echo "ABORT: cannot read <that-release>:template/$f"; break; }
+  printf '%s\n' "$ref" | diff --strip-trailing-cr - "<project>/$f"
+done
 ```
 
 **`--strip-trailing-cr` is not optional.** Where the two repositories disagree
@@ -374,6 +379,15 @@ about line endings — a CRLF working tree on one side and LF blobs on the other
 enough — a plain `diff` reports every line of every file as changed while nothing
 has leaked. That false positive points straight at merging, which is the one
 thing this procedure forbids, so the check fails towards its own worst outcome.
+
+**Nor is checking that `git show` succeeded.** Piped straight into `diff`, a
+failed `git show` contributes an empty left side, and `diff` then reports every
+line of the file as added — which reads as a total leak and points at the same
+merge. A release that was never tagged, a misspelled version, a wrong
+`<baseline>` path each produce it, and the shell reports success throughout
+because the pipeline's status is `diff`'s. The loop above stops instead: a check
+that cannot tell *nothing to compare against* from *everything leaked* is worse
+than no check.
 
 If something did leak, move it into `PROJECT.md` first. Do not merge, and do not
 overwrite until it is out.
