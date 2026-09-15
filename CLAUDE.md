@@ -71,6 +71,14 @@ A commit that touches only `BOOTSTRAP.md` or `README.md` changes no version line
 and carries no version in its subject. Labelling one `(vX.Y.Z)` invents a
 release that no file records.
 
+**A fix that ships no release reaches no project.** A change confined to
+`BOOTSTRAP.md`, `README.md` or this file moves no version line, so nothing
+triggers an update, and §Updating's step 3 — which retires the findings a
+release closed — never runs. Where such a change closes a finding a project
+filed, tell that project directly. There is no list of consuming projects and
+there cannot be one; the distribution model is a one-way copy. Nothing checks
+this, so it is a preference, not a rule.
+
 A rule that no gauntlet layer or CI check can verify is guidance, and must say
 so. Do not write enforcement language the documents cannot back up — a rule
 that reads as mandatory but is never checked teaches everyone to ignore the
