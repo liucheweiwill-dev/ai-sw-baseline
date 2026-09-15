@@ -1,7 +1,7 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v2.7.2 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v2.8.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim. Never merge.     -->
@@ -485,6 +485,14 @@ Checkpoint commits are free: they are working state, not the deliverable, and
 they need no authorisation. **The human authorises what reaches the main branch,
 not each commit on the way there** — that is the gate in §2 step 10.
 
+**Look for an existing task branch before starting one.** `git branch -a` is the
+only current answer to what is already underway: the status log records what
+finished (§13), so a task that started and has not merged leaves no trace there,
+and a line naming which task is *next* goes on saying it weeks into that task's
+work. Beginning one twice costs a duplicate SPEC and the review commissioned
+against it. Nothing checks this, so it is a preference; the branch is simply the
+earliest durable evidence a task exists, since step 1 creates it before the SPEC.
+
 **One file may be committed directly to the main branch: the status log.** It
 records what the merge did, so it cannot be finished before the merge exists.
 That is why step 10 authorises the merge first and writes the log second.
@@ -516,8 +524,9 @@ ARCHITECTURE.md                 dependency direction + forbidden edges. Short. L
 SETUP.md                        what to install; humans run the commands
 docs/<NNN-kebab-slug>/SPEC.md       revised in place; each revision re-approved (§4)
 docs/<NNN-kebab-slug>/EVIDENCE.md   rewritten on every gauntlet run
-docs/development-status.md      cross-task decisions and their reasons;
-                                one result line per task. Not a second log.
+docs/development-status.md      cross-task decisions and their reasons; one
+                                result line per task, and the branch of any
+                                task in progress. Not a second log.
 ```
 
 `CLAUDE.md`, `AGENTS.md` and `SETUP.md` are general layer from top to bottom and
