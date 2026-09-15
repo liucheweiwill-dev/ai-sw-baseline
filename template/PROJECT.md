@@ -49,6 +49,7 @@ Architecture check: `<FILL IN>`
 
 | Role | Model | Reasoning effort |
 |---|---|---|
+| Feasibility review | `<FILL IN>` | `<FILL IN>` |
 | Builder, Tier 1 | `<FILL IN>` | `<FILL IN>` |
 | Builder, Tier 2 | `<FILL IN>` | `<FILL IN>` |
 | Builder, Tier 3 | `<FILL IN>` | `<FILL IN>` |
