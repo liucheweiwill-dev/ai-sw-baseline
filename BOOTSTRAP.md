@@ -134,10 +134,13 @@ you happen to find.
 | Project | What it does, who uses it, and what it deliberately does not do. |
 | Tech stack | Language and version, framework, package manager, version files. |
 | Commands | install, build, test, lint, typecheck. |
+| Profile | Which capabilities in `AGENTS.md` §3.1 this project has — customer data, multi-tenant, payments, uploads, model calls, public availability — and the standing check for each. Ask about each one; do not infer it from the code. |
 | Gauntlet commands | One command per layer, plus the architecture check — see below. |
+| Release and operation | Where it deploys, how an artifact is identified, how recovery works, what keeps checking once nobody is working, and what a human can do with no agent available. `none` if nothing is deployed. |
+| Model components | For each model call: the evaluation set and where it came from, the threshold, what triggers re-evaluation, and the spend ceiling. `none` if there are none. |
 | Branches | The main branch name, and how task branches are named. |
-| Agent models | Builder and verifier models, effort per Tier, fallback, and the sandbox/approval policy in force — see below. |
-| Project-specific safety | Regulated data, code-level security checks, licence limits. Write `none` if there is nothing. |
+| Agent models | The feasibility reviewer, the builder per Tier, the Tier 3 verifier, effort for each, fallback, and the sandbox/approval policy in force — see below. |
+| Project-specific safety | Regulated data, code-level security checks, licence limits. This section carries authority (§10), so it holds rules. Write `none` if there is nothing. |
 
 **Gauntlet commands are the step that matters.** `template/SETUP.md` §4
 suggests tools per language. Two rules when filling the table:
@@ -172,6 +175,11 @@ default. Then fill the table against the rules in `AGENTS.md` §11:
   their reading of the remaining gap under `Capability gap between builder and
   verifier`. Never accept a cheaper mini variant — a weak adversary clears
   whatever it fails to understand, and that reads as assurance.
+- The **feasibility review** has its own row and is *not* derived from the Tier.
+  Set it at or above the highest effort any builder row uses — raising the Tier
+  is one of the things that review exists to do, so deriving its effort from a
+  proposed Tier lets a low estimate weaken the check meant to correct it
+  (`AGENTS.md` §11.2).
 - **Tier 1** takes a lower effort, applied per call with
   `-c model_reasoning_effort=<lower>`. Do not lower the configured default;
   Tier 2 and 3 need it.
@@ -228,10 +236,15 @@ but the shape is the same everywhere:
    command run once. Show the human the command; do not install unasked.
 2. **The source packages** the architecture contract names, so the architecture
    check has something to check.
-3. **One trivial unit of real behaviour**, plus a test and a property test that
-   exercise it. Not the first task's work — scaffolding, named as such, that the
-   first task deletes. Without it the Mutation layer has nothing to mutate and
-   the Property layer collects nothing.
+3. **The thinnest slice of real behaviour that goes all the way through** — the
+   real entry point, through the real layers, to real output — plus a test and a
+   property test over it. Without it the Mutation layer has nothing to mutate,
+   the Property layer collects nothing, and Real execution has nothing to run.
+
+   This is a slice, not scaffolding: the first task **grows** it rather than
+   deleting it. But it is also not the walking skeleton itself. Deploying this
+   for real is a product increment and goes through a SPEC and a human approval
+   like anything else — setup does not get a private route around the gate.
 4. **Tool configuration**: mutation scope, the property-test marker, coverage
    source, the architecture contract.
 5. **A `.gitignore`** covering the virtual environment, caches, and every
@@ -257,6 +270,21 @@ Skills guide, static analysis detects, **CI enforces**. Put into the project's
 CI every gauntlet layer that has a real command, plus the architecture check if
 one exists. Until that exists, those rules are suggestions a tired human can
 skip.
+
+**Then add the two things CI is for that the gauntlet is not** (`AGENTS.md` §15.4):
+
+- **The standing checks** from the profile (§3.1). They run on every release
+  whatever the change was, which is precisely why they belong to the pipeline
+  and not to a task.
+- **The release path**: build the artifact, give it its identifier, and — where
+  a human has authorised that target (§10) — deploy it and run the post-deploy
+  check. One run, not a second conversation and not a second report.
+
+**Do not wire a deploy to a target nobody has authorised.** Merge authorisation
+is not deploy authorisation, and a pipeline that deploys on merge has converted
+one gate into none. Either the human authorises each release, or they record a
+standing policy naming the targets that may be deployed to without asking; wire
+what that policy actually says.
 
 **A layer recorded as `not available` is not wired, and that is the correct
 outcome** — do not invent a command to fill the slot. CI runs what exists; the

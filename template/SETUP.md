@@ -1,7 +1,7 @@
 # SETUP.md — Installing a Claude + Codex workstation
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v2.8.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v3.0.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- ============================================================ -->
@@ -283,7 +283,7 @@ Per project instead — commit this as `.mcp.json` in the repository root:
 
 ## 4. Language-layer tooling
 
-`AGENTS.md` fixes the seven gauntlet **layers**; this section suggests the
+`AGENTS.md` fixes the eight gauntlet **layers**; this section suggests the
 tools. Fill the actual commands into `PROJECT.md`. If a
 layer has no tool in your language, write `not available` and the reason —
 that becomes the Structural blind spot in every EVIDENCE report.
@@ -306,6 +306,21 @@ the EVIDENCE Honest notes that the edit was made outside the writing role.
 One rule outranks tool choice: **a layer must be able to fail.** A coverage run
 without a threshold flag prints a number and exits 0 — it is decoration, not a
 layer.
+
+**Real execution depends on the shape of the application, not on its language**,
+so it has no row in the tables below. Pick the tool from what the thing is:
+
+| Shape | What runs it |
+|---|---|
+| Web service or page | a browser driver, or an HTTP client against the started server — started the way it really starts, not an in-process test harness |
+| CLI | invoke the built binary as a subprocess and assert on its output and exit status |
+| Library | a small consumer that imports the published artifact, not the working tree |
+| Worker or batch | enqueue real work and assert the effect, including the deadline |
+
+**The standing checks in `AGENTS.md` §3.1 are not in this menu either.** Tenant
+isolation, retention, provider-event handling and consumption ceilings are
+written against the project's own architecture; no general tool supplies them.
+`PROJECT.md` names each one and its command.
 
 **Changed-line coverage needs a comparison base.** Overall coverage can sit at
 90% while every line the change added is untested, so an overall-coverage gate
@@ -333,7 +348,7 @@ pip install pytest mypy ruff pytest-cov diff-cover mutmut hypothesis vulture imp
 | Changed-line coverage | coverage.py + diff-cover | `pytest --cov=<pkg> --cov-branch --cov-report=xml && diff-cover coverage.xml --compare-branch=<base> --fail-under=<n>` |
 | Mutation | mutmut | `mutmut run` — then `mutmut results`; survivors fail the layer. **Does not run natively on Windows** — it exits telling you to use WSL. On a Windows workstation record this layer as `CI only` and run it in CI on Linux. |
 | Property | hypothesis | runs inside `pytest`; the layer is "the suite contains `@given` properties for the invariants in the SPEC" |
-| Cleanup | ruff + vulture | `ruff check --select F401,F811,F841 . && vulture <pkg>` |
+| Unused code | ruff + vulture | `ruff check --select F401,F811,F841 . && vulture <pkg>` |
 
 Architecture: **import-linter** (`lint-imports`) enforces the layer contract in
 `ARCHITECTURE.md` and rejects cycles. This is the deterministic check that a
@@ -353,7 +368,7 @@ npm i -D vitest typescript eslint @vitest/coverage-v8 @stryker-mutator/core fast
 | Changed-line coverage | vitest coverage | `not available` out of the box — v8 coverage has no diff mode. Gate overall coverage with `coverage.thresholds` in the config and record the gap. |
 | Mutation | Stryker | `npx stryker run` with `mutate` scoped to the changed files |
 | Property | fast-check | runs inside the test suite; the layer is "properties exist for the SPEC's invariants" |
-| Cleanup | knip | `npx knip` |
+| Unused code | knip | `npx knip` |
 
 Architecture: **dependency-cruiser** for forbidden edges and cycles.
 
@@ -367,7 +382,7 @@ Architecture: **dependency-cruiser** for forbidden edges and cycles.
 | Changed-line coverage | llvm-cov / OpenCppCoverage | `not available` as a diff gate — emit a report and set an overall threshold, and record the gap |
 | Mutation | mull | scope to changed translation units |
 | Property | RapidCheck | runs inside the test binary; the layer is "properties exist for the SPEC's invariants" |
-| Cleanup | include-what-you-use | `iwyu_tool.py -p build` plus `-Wunused` in the build flags |
+| Unused code | include-what-you-use | `iwyu_tool.py -p build` plus `-Wunused` in the build flags |
 
 > `cmake --build . -- -Werror` does **not** work: arguments after `--` go to the
 > build backend, so Ninja rejects the flag and Make reads it as a Make option.
@@ -385,7 +400,7 @@ Tests `go test ./... -race` · Types `go build ./...` · Lint
 `go vet ./... && staticcheck ./...` · Changed-line coverage `not available` —
 gate overall with `go test -coverprofile` plus a threshold script, record the
 gap · Mutation no mature default, record `not available` · Property `rapid` ·
-Cleanup `staticcheck` unused checks.
+Unused code `staticcheck` unused checks.
 
 ### Rust
 
@@ -394,7 +409,7 @@ Install: `cargo install cargo-llvm-cov cargo-mutants cargo-udeps`
 Tests `cargo test` · Types `cargo check` · Lint `cargo clippy -- -D warnings` ·
 Changed-line coverage `not available` — gate overall with
 `cargo llvm-cov --branch --fail-under-lines <n>`, record the gap · Mutation
-`cargo mutants --file <changed>` · Property `proptest` · Cleanup `cargo-udeps`.
+`cargo mutants --file <changed>` · Property `proptest` · Unused code `cargo-udeps`.
 
 ### Java
 
@@ -404,7 +419,7 @@ there is no separate install step.
 Tests `./mvnw test` · Types `./mvnw compile` · Lint
 `./mvnw checkstyle:check spotless:check` · Changed-line coverage `not available`
 — JaCoCo check rules gate overall, record the gap · Mutation PIT, scoped to
-changed classes · Property jqwik · Cleanup Checkstyle `UnusedImports` +
+changed classes · Property jqwik · Unused code Checkstyle `UnusedImports` +
 SpotBugs.
 
 ### A language not listed here

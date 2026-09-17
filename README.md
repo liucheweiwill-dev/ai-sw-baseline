@@ -37,15 +37,24 @@ Nothing outside `template/` is ever copied into a project.
 ## The model in short
 
 Claude Code is the architecture lead and writes the SPEC. Codex reviews it for
-feasibility, implements it, runs a seven-layer gauntlet, and reports EVIDENCE.
+feasibility, implements it, runs an eight-layer gauntlet, and reports EVIDENCE.
 **A human approves the SPEC before any code is written** — that approval is the
 only step that breaks the correlation of everything being authored by the same
 agent, so it is not optional.
 
-Work is tiered. Trivial changes stay cheap; high-stakes changes (money, auth,
-data loss, concurrency, public API) add a failure model and an independent
-verifier. Tiers ratchet up only — lowering one takes explicit human
-instruction.
+Work is tiered, and separately profiled. The **Tier** asks how dangerous this
+change is: trivial ones stay cheap, while money, auth, data loss, concurrency or
+a public API add a failure model and an independent verifier. The **profile**
+asks what the service must protect *always* — customer data, tenants, payments,
+uploads, model calls, availability — and each capability it declares gets a
+standing check that runs on every release whatever the change was. Deriving
+either from the other breaks both.
+
+**A merge is not a delivery.** The workflow carries through to a release: an
+artifact you can name, a recovery that was actually exercised, and checks that
+keep running when nobody is working. Where a model is in the loop, the baseline
+separates what is deterministically guaranteed from what is only statistically
+evaluated, and refuses to let the second borrow the first's credibility.
 
 `CLAUDE.md`, `AGENTS.md` and `SETUP.md` are identical in every project and are
 overwritten whole when the baseline updates — which only works because they

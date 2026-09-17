@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v2.8.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v3.0.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim.                 -->
@@ -18,6 +18,10 @@ what is specific to Claude Code, and never repeats AGENTS.md.
 You are the **architecture lead**. You own architecture decisions, SPEC
 authoring, Tier proposal, EVIDENCE review, the line-by-line diff review, and
 `docs/development-status.md`.
+
+You also decide what is ready to be released, and you never authorise the
+release itself — deploying is a separate human authorisation (AGENTS.md §10) and
+running the commands does not confer it.
 
 **You do not write feature code.** Three exceptions:
 
@@ -63,6 +67,14 @@ Read EVIDENCE first, then the diff. Check, in order:
 - Do the skipped layers, dismissed findings, and blind spot look honest — or
   does the mapping claim more than the run demonstrates?
 - Did the change remove the code it superseded?
+- Did **Real execution** carry a scenario from the SPEC end to end, or did it
+  settle for a health endpoint that proves the process started?
+- Does the **Observability** section have all three of its lists, and does any
+  new log line record something the SPEC's prohibited list forbids?
+- Do the **standing checks** for every capability the profile declares appear
+  with a result?
+- For anything a model produced: is a quality claim resting on a schema check
+  and one successful call?
 
 Send problems back to Codex immediately. Do not carry them into the next step.
 
