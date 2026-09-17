@@ -41,7 +41,7 @@ the way the rest of the setup will reach it, and a full-path workaround answers
 a different question while looking like a green tick.
 
 ```bash
-ls ~/.claude/skills ~/.agents/skills          # installed skills, no download
+ls ~/.claude/skills ~/.codex/skills           # installed skills, no download
 git config --global user.name                 # global identity; the per-repo
 git config --global user.email                #   check belongs to Step 8
 codex doctor                                  # auth, model access, sandbox, search
@@ -162,12 +162,16 @@ grep -E "^model|reasoning" ~/.codex/config.toml   # the configured defaults
 The catalog is the set of legal answers; the config line is only today's
 default. Then fill the table against the rules in `AGENTS.md` §11:
 
-- The **verifier** takes a *different* model that is **not less capable** than
-  the builder's. There is no machine-readable capability ordering, so this is
-  the human's judgement, not yours to infer from a name: show them the catalog,
-  say which model the builder uses, and ask which of the others is at least its
-  equal. Record their answer. Never accept a cheaper mini variant — a weak
-  adversary clears whatever it fails to understand, and that reads as assurance.
+- The **verifier** takes a *different* model: the **strongest one available
+  other than the builder's**. It is not required to equal the builder — when the
+  builder already uses the best model on offer, nothing can, and `AGENTS.md`
+  §11.3 asks you to record the gap rather than demand it away. There is no
+  machine-readable capability ordering, so this is the human's judgement, not
+  yours to infer from a name: show them the catalog, say which model the builder
+  uses, and ask which of the rest is strongest. Record that answer, and record
+  their reading of the remaining gap under `Capability gap between builder and
+  verifier`. Never accept a cheaper mini variant — a weak adversary clears
+  whatever it fails to understand, and that reads as assurance.
 - **Tier 1** takes a lower effort, applied per call with
   `-c model_reasoning_effort=<lower>`. Do not lower the configured default;
   Tier 2 and 3 need it.
@@ -240,8 +244,12 @@ task. Discovering them now is the entire point of this step: a first SPEC that
 also has to make eight tools work for the first time cannot tell you which of
 its failures are about the code.
 
-One layer may legitimately not pass here: a `CI only` row (`AGENTS.md` §5)
-cannot run on this workstation at all. Record it and move on.
+One layer may legitimately not pass here: a tool that cannot run on this
+workstation at all. Mark that row **provisionally** `CI only` and move on —
+provisionally, because `AGENTS.md` §5 makes `CI only` a claim about a CI that
+exists and has already run this project's workflow, and Step 7 has not wired one
+yet. Step 7 is where that claim becomes true, or the row becomes
+`not available`.
 
 ## Step 7 — Wire CI
 
@@ -253,9 +261,17 @@ skip.
 **A layer recorded as `not available` is not wired, and that is the correct
 outcome** — do not invent a command to fill the slot. CI runs what exists; the
 gaps live in the project layer table and reappear in every EVIDENCE report as
-the Structural blind spot. That is the exception mechanism, and it is the only
-one: a layer is either a command CI runs, or an explicit `not available` with a
-reason. Nothing sits in between.
+the Structural blind spot. That is the exception mechanism, and §5's three
+states are the whole of it: a command, `CI only`, or `not available` with a
+reason. Nothing else belongs in the table.
+
+**Then settle the rows Step 6 left provisional.** Trigger the pipeline, read the
+run, and write whichever state the result makes true: `CI only` once this CI has
+actually executed that layer, and `not available` until it has, with the reason
+naming both halves — the tool does not run on this workstation, and nothing else
+runs it either. Do not carry a provisional row into Step 8. A row promising a
+second environment that has never existed reads as coverage, which is worse than
+the gap it hides.
 
 **CI cannot enforce the manual gates.** Human approval of the SPEC, a fresh
 verifier session, the four blind inputs, model independence, and the
@@ -265,7 +281,9 @@ record they leave: the `Human approval` section of the SPEC, and the `Roles`,
 fields; do not claim CI covers them.
 
 If the project has no CI yet, say so plainly and record it as a known gap
-rather than pretending the baseline is fully in force.
+rather than pretending the baseline is fully in force. Every provisional
+`CI only` row from Step 6 is then `not available`: there is no second
+environment, so nothing is left to confirm.
 
 ## Step 8 — Commit the setup
 
@@ -416,12 +434,18 @@ exists, and a section-level comparison reports no gaps while the project quietly
 stays on the old shape. Compare the skeletons:
 
 ```bash
-skeleton() { grep -oE '^## .+|^\| [^|]+ \||^[A-Z][A-Za-z ]+:' "$1" | sed 's/ *|$//; s/^| *//'; }
+skeleton() { grep -oE '^## .+|^\| [^|]+ \||^[A-Z][A-Za-z ]+:|^- [A-Z][A-Za-z ]+:' "$1" | sed 's/ *|$//; s/^| *//'; }
 diff <(skeleton <baseline>/template/PROJECT.md) <(skeleton <project>/PROJECT.md)
 ```
 
 Read the diff rather than trusting it — row *labels* must match, row *values*
-will not, and the helper cannot tell them apart. Then:
+will not, and the helper cannot tell them apart.
+
+**It sees four shapes and no others**: a `##` heading, a table row, a `Label:`
+field, and a `- Label:` bullet. A field written in any other shape is invisible
+to it, and so is a label containing a digit. A silent diff therefore means *the
+four shapes agree*, not *the schemas match* — read `template/PROJECT.md` itself
+whenever the release notes mention a new field. Then:
 
 - A heading, table row or field in the template that `PROJECT.md` lacks:
   **append it as a placeholder** and ask the human to fill it. Never guess.
