@@ -41,7 +41,7 @@ the way the rest of the setup will reach it, and a full-path workaround answers
 a different question while looking like a green tick.
 
 ```bash
-ls ~/.claude/skills ~/.codex/skills           # installed skills, no download
+ls ~/.claude/skills ~/.agents/skills ~/.codex/skills   # installed, no download
 git config --global user.name                 # global identity; the per-repo
 git config --global user.email                #   check belongs to Step 8
 codex doctor                                  # auth, model access, sandbox, search
@@ -56,6 +56,17 @@ push; `codex doctor` reporting a reachable model and a sandbox policy that
 *fails* rather than auto-approves an escalation; and `serena` listed as an MCP
 server for Codex.
 
+**Codex reads two skill directories.** `~/.agents/skills` is where the current
+installer writes; `~/.codex/skills` is where older installs went. Both are live,
+so listing only one reports a false gap for everything installed recently.
+
+**And a skill on disk is not a skill the agent can see.** Codex fits skills into
+a context budget and drops what does not fit, so a correctly placed, correctly
+formed skill can simply never load. Neither `ls` nor the installer can tell:
+both report success. Where many skills are installed, ask Codex itself which of
+the four it has — a read-only `codex exec` naming them — and treat one it cannot
+see as missing, with the budget named as the cause rather than the installation.
+
 **Claude Code's MCP registration cannot be checked from here.** A desktop-app
 install exposes no `claude` command, so there is no equivalent of `codex mcp
 list`. Step 2 writes the project's `.mcp.json`, which is what registers Serena
@@ -63,9 +74,12 @@ for Claude Code in this project; confirm it from an interactive session with
 `/mcp` after setup, and do not block on it now.
 
 Report every gap to the human with the matching command from `template/SETUP.md`
-and stop there. Do not proceed to Step 3 with a half-configured machine — you
-will produce a project whose gauntlet cannot run and whose commits are
-misattributed.
+and stop there. Steps 1 and 2 — making the repository, copying the four files —
+change nothing a missing tool can spoil, so carry on into them if the human asks
+to keep moving. **Step 3 is the hard line.** It reads the account's model
+catalog, and everything after it needs the gauntlet's tools and a correct commit
+identity: a project built past that point on a half-configured machine has a
+gauntlet that cannot run and commits attributed to nobody.
 
 ## Step 1 — Make it a git repository
 
@@ -250,12 +264,32 @@ but the shape is the same everywhere:
 5. **A `.gitignore`** covering the virtual environment, caches, and every
    artefact the gauntlet writes — coverage reports, mutation caches. Without it
    the first commit swallows the whole toolchain.
+6. **An exclusion, in whatever formatter or linter you just wired, for
+   `CLAUDE.md`, `AGENTS.md` and `SETUP.md`.** They sit in the repository root
+   like everything else, so a formatter reaches them by default and reformats
+   them on its first run. That breaks the byte-identical check in Step 9 and
+   turns the next update's unconditional overwrite into silent loss of whatever
+   was changed. The three files are not the project's to format.
 
 Then run every command in the table and fix the configuration until they pass.
 **Failures here are toolchain failures and belong to setup**, not to the first
 task. Discovering them now is the entire point of this step: a first SPEC that
 also has to make eight tools work for the first time cannot tell you which of
 its failures are about the code.
+
+**Then make each layer fail on purpose, once, before recording it as working.**
+Break the thing that layer exists to catch — delete a property test, add a
+forbidden import, leave a line uncovered, weaken an assertion — watch the
+command go red, and put it back. Passing proves the command ran. It does not
+prove the layer is doing anything, and a layer that is silently inert produces
+exactly the output of a layer with nothing to complain about. A mutation runner
+that activates no mutant still reports a score; the score reads as *these tests
+are bad*, which sends the next hour to the wrong place entirely.
+
+This is not enforceable by a check — nothing can tell afterwards whether you
+did it — so it is a practice, not a rule. It is also the cheapest hour in the
+whole procedure, and the layers most likely to be inert are the ones whose
+failure mode looks most like a real finding.
 
 One layer may legitimately not pass here: a tool that cannot run on this
 workstation at all. Mark that row **provisionally** `CI only` and move on —
@@ -276,6 +310,12 @@ skip.
 - **The standing checks** from the profile (§3.1). They run on every release
   whatever the change was, which is precisely why they belong to the pipeline
   and not to a task.
+
+  **A standing check that needs a live deployment cannot live in a pipeline
+  forbidden to deploy.** Where the human authorises each release by hand, a
+  check that reads the deployed site belongs to that act rather than to CI:
+  name it in `PROJECT.md` beside the capability it defends, and say in the same
+  breath that it runs at deploy time. A check with no home runs nowhere.
 - **The release path**: build the artifact, give it its identifier, and — where
   a human has authorised that target (§10) — deploy it and run the post-deploy
   check. One run, not a second conversation and not a second report.
@@ -297,9 +337,17 @@ reason. Nothing else belongs in the table.
 run, and write whichever state the result makes true: `CI only` once this CI has
 actually executed that layer, and `not available` until it has, with the reason
 naming both halves — the tool does not run on this workstation, and nothing else
-runs it either. Do not carry a provisional row into Step 8. A row promising a
-second environment that has never existed reads as coverage, which is worse than
-the gap it hides.
+runs it either. A row promising a second environment that has never existed
+reads as coverage, which is worse than the gap it hides.
+
+**This is the one place the steps do not run in order, and they cannot.** CI
+runs on pushed commits, and the first commit is Step 8. So: leave the row
+provisional, do Step 8, get the human's authorisation to push — §10 governs that
+push exactly as it governs the commit — and come back here once the run has
+finished. The row is settled by a second commit, not by the setup commit. Do not
+guess the result to avoid the round trip; a `CI only` written before any CI ran
+is the precise claim this paragraph exists to prevent. A project with no
+provisional rows skips all of this and goes straight to Step 8.
 
 **CI cannot enforce the manual gates.** Human approval of the SPEC, a fresh
 verifier session, the four blind inputs, model independence, and the
@@ -343,6 +391,11 @@ This is a main-branch commit, so §10's rule applies in full: **the human
 authorises it.** Checkpoint commits on task branches come later and are free
 (`AGENTS.md` §12); this one is not a checkpoint.
 
+**Pushing is a separate act needing its own authorisation.** Committing locally
+and publishing to a remote are different decisions, and authorising one is not
+authorising the other. Ask again. If Step 7 left a provisional row, the push is
+what lets its pipeline run at all, so say that is why you are asking.
+
 Confirm the branch matches what `PROJECT.md` records as the main branch. `git
 init` uses whatever the machine's `init.defaultBranch` says, which is not
 necessarily what the human answered at Step 3:
@@ -374,6 +427,11 @@ be destroyed the first time someone tries. `--strip-trailing-cr` is there for
 the reason §Updating gives — without it a CRLF/LF disagreement reports every
 line as changed while nothing was edited, and that false positive reads exactly
 like a leak.
+
+When it does report a difference, suspect the project's own formatter before
+suspecting a person. Nobody decides to rewrite `AGENTS.md`; a formatter wired at
+Step 6 does it on its first run, across all three files at once, and reports
+success. Step 6's exclusion is what prevents it.
 
 Then run every gauntlet command from the filled-in table once, on the current
 tree, and report which ones pass, fail, or are `not available`. A table of

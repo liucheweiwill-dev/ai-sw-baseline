@@ -1,7 +1,7 @@
 # SETUP.md — Installing a Claude + Codex workstation
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v3.0.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v3.1.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- ============================================================ -->
@@ -182,6 +182,14 @@ Expected: `old-coder`, `ponytail-review`, `ponytail-audit`,
 `exhaustive-code-slimmer` on both agents; `grill-me` and `grilling` on Claude
 Code. Skills load at session start — **restart both agents**.
 
+**Installed is not the same as loaded.** An agent fits skills into a context
+budget and drops what does not fit, so a correctly installed skill can simply
+never reach it — the installer reports success, the directory listing looks
+right, and nothing anywhere says the skill was skipped. The more skills a
+machine accumulates, the more likely it is that the ones added last are the ones
+dropped. After installing, ask the agent itself which of these it can see, and
+prune what you do not use: the budget is the scarce thing, not the disk.
+
 ### Note on `exhaustive-code-slimmer`
 
 Its security scan reports **Medium risk, 1 alert**, unlike the others. The
@@ -245,6 +253,29 @@ serena init
 > [System.IO.Directory]::Delete("$env:APPDATA\uv\python\cpython-3.13-windows-x86_64-none", $false)
 > ```
 
+> **Second known failure on Windows.** `uv tool install` may instead abort with
+> `failed to remove directory ...\<package>-<version>.data` and *the file is in
+> use by another process* — or, under `UV_LINK_MODE=copy`, with
+> `The wheel is invalid: Wheel contains an invalid entry (directory) in the
+> scripts directory: ...\.tmp<random>`. Both are one fault: uv puts its own
+> temporary directory inside a wheel's `.data/scripts` folder and then trips
+> over it. Only old-style wheels that ship scripts through `.data/scripts`
+> trigger it, and one of those buried in a dependency tree is enough.
+>
+> It is reproducible from a clean state, which is how to tell it apart from the
+> antivirus interference its first message impersonates. Do not spend the
+> afternoon on exclusion lists: install the tool to a directory on a **different
+> filesystem from uv's cache**, which makes uv fall back from hardlinking to a
+> full copy and steps around the fault entirely.
+>
+> ```bash
+> UV_TOOL_DIR=<a directory on another volume> uv tool install -p 3.13 serena-agent
+> ```
+>
+> The executables still land in `~/.local/bin`, so the bare `serena` command
+> §3.4 depends on keeps working. Set `UV_TOOL_DIR` permanently if you do this —
+> otherwise `uv tool list` and `uv tool upgrade` cannot see what they installed.
+
 ### 3.3 Connect Serena to Codex
 
 ```bash
@@ -306,6 +337,25 @@ the EVIDENCE Honest notes that the edit was made outside the writing role.
 One rule outranks tool choice: **a layer must be able to fail.** A coverage run
 without a threshold flag prints a number and exits 0 — it is decoration, not a
 layer.
+
+And a layer must be **seen** to fail, once, before it is trusted. A tool can be
+configured, installed, invoked, and inert: a mutation runner that never actually
+activates a mutant still reports a score, and that score reads as *the tests are
+bad* rather than *the tool is dead*. The failure modes that matter here are the
+ones that impersonate a real finding. So whenever you wire a layer or change the
+version of the tool behind it, break the thing it exists to catch, watch the
+command go red, and put it back. Nothing can verify afterwards that you did
+this, so it is a practice rather than a rule — but it is the difference between
+an eight-layer gauntlet and a gauntlet with a hole you will not find until it
+matters.
+
+**Whatever formatter or linter you wire, exclude `CLAUDE.md`, `AGENTS.md` and
+`SETUP.md` from it.** They sit in the repository root like any other file, so a
+formatter reaches them by default and rewrites them on its first run, reporting
+success. These three are replaced wholesale by every baseline update and must
+stay byte-identical to the baseline's copies; once a formatter has reformatted
+them, the next update overwrites its own changes silently and the project has no
+way to notice. They are not the project's to format.
 
 **Real execution depends on the shape of the application, not on its language**,
 so it has no row in the tables below. Pick the tool from what the thing is:
