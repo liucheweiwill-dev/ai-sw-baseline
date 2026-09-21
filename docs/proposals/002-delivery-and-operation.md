@@ -201,11 +201,22 @@ mutation, that condition was not met, and the demotion was dropped.**
 
 ## Carried over from 001
 
-Unchanged and still applying: the §7 diff review gets defined inputs the way the
-Tier 3 verifier does (5a); the Property layer is redefined as an executable check
-that the required properties exist and ran (5b); `PROJECT.md`'s safety section
-joins §10's authority list (5c); and cross-task invariants (4) are folded into
-§15 rather than standing alone.
+Shipped in v3.0.0: the Property layer is redefined as an executable check that
+the required properties exist and ran (5b); `PROJECT.md`'s safety section joins
+§10's authority list (5c); and cross-task invariants (4) are folded into §15
+rather than standing alone.
+
+**Correction, 2026-09-21.** This section originally also listed 5a — defined
+inputs for the §7 diff review — among the changes carried over. **It was not in
+v3.0.0.** §7 was untouched by that release, and the claim stood here unnoticed
+for four days. It shipped in **v3.2.0**, and not in the form described: the §7
+reviewer audits the builder's account, where §11.3's verifier attacks the work
+without it, so the two take different input sets rather than the same one. The
+shared part is the discipline — named, bounded, handed over — not the list.
+
+The error is left visible rather than edited away. A release document that
+claims a change it did not make is exactly what §6 asks EVIDENCE not to do, and
+this one did it.
 
 ## Cut from 001, and not returning
 
