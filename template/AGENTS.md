@@ -1,7 +1,7 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v3.1.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v3.2.0 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim. Never merge.     -->
@@ -292,7 +292,9 @@ EVIDENCE replaces any other completion report. Required sections:
 ## Verified source state        the checkpoint SHA from §2 step 6, and its branch
 ## Roles                        dual-agent | single-agent (correlation not broken)
 ## Double-track                 both | diff-review skipped by human instruction |
-                                N/A (Tier 1) | N/A (single-agent)
+                                N/A (Tier 1) | N/A (single-agent). Name the
+                                inputs the reviewer was given, and the order
+                                they were read in (§7)
 ## Spec -> Test mapping         every scenario and every "Must NOT" -> a test, a layer,
                                 or an explicit skipped-with-reason line. Never silently absent.
 ## Gauntlet                     final fresh run, per layer, with the command, where it
@@ -344,9 +346,36 @@ this was never Tier 1.
 
 ## 7. Double-track review `[dual-agent]`
 
-Tier 2 and 3 only. **EVIDENCE first, diff review second** — the mapping tells
-the reviewer where to look: skipped-with-reason lines, layers not run, and
-dismissed findings.
+Tier 2 and 3 only. This reviewer audits the builder's account against the work.
+That is a different job from §11.3's verifier, which attacks the work *without*
+the account — so it takes a different set of inputs, assembled with the same
+discipline: named, bounded, and handed over rather than gone looking for.
+
+**The reviewer receives exactly these four:**
+
+1. **The approved SPEC**, at the revision the human approved.
+2. **The diff**, against the commit the task branched from.
+3. **EVIDENCE**, as written.
+4. **The task's `docs/<NNN-kebab-slug>/` directory**, for anything the SPEC
+   attached.
+
+Not the repository to wander through. A review that re-reads whatever it likes
+anchors on whatever it happens to open first, and pays again to rediscover
+context the four inputs already carry.
+
+Nothing can check which files a reviewer opened, so this rule stands on the
+record it leaves: `Double-track` in EVIDENCE names what was supplied (§6). A
+review given more than the four is not a defect as long as the record says so —
+one that quietly took more is the failure this field exists to expose.
+
+**Order: EVIDENCE first, diff second.** The mapping tells the reviewer where to
+look: skipped-with-reason lines, layers not run, and dismissed findings.
+
+*A preference, stated as one:* reading the builder's account first also anchors
+the reviewer on it, and forming a view from the diff and the SPEC before opening
+EVIDENCE buys back some independence for the price of one extra pass. Nothing
+here measures which is better, so the order above is the default rather than the
+rule, and either is fine as long as EVIDENCE says which was used.
 
 Skipping the diff review is permitted **only on explicit human instruction**,
 and the EVIDENCE `Double-track` field must record it. `development-status.md`
