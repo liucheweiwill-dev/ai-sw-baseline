@@ -121,3 +121,160 @@ Probably none in the general layer; this is about how *this* repository works,
 so it belongs in the root `CLAUDE.md` if anywhere. The smallest useful version
 is a line in the release ritual: before tagging, read the proposal's list of
 changes against `git diff <previous tag>..HEAD` and confirm each one appears.
+
+---
+
+## F3 — Nothing says whose rendering of the output EVIDENCE records
+
+**Hit:** 2026-09-21, while assessing two token-compression tools against the
+workstation's existing setup.
+**Against:** v3.2.0, §5, §6, §11.1, §15.4, and `SETUP.md` §5.
+**Status:** open.
+
+### What happened
+
+The workstation runs a shell proxy that compresses command output before the
+agent sees it. The global Codex configuration imports its instructions, and
+those say to prefix every shell command with it. Measured on this machine, it
+removes 24% of output overall and 93% on the commands it handles best.
+
+So the builder runs the gauntlet through a filter, and then writes EVIDENCE from
+what it saw.
+
+This is not an argument against the tool. Filtering what an agent *reads* is
+sensible and it is why the tool exists. The problem is narrower: **the filtered
+version can become the record.**
+
+### The gap
+
+§6 requires EVIDENCE to record, for each layer, "the command, where it ran, and
+its output". **It does not say whose rendering of that output.** A compressed
+retelling satisfies the sentence.
+
+§11.1 already worries about something one step away: never wrap a `codex exec`
+in a pipeline, because the pipeline replaces the invocation's exit status with
+the last command's. **A filter between a command and the agent is the same shape
+of problem one level up** — it does not replace the status, it replaces the
+content, and the document has a rule for the first and nothing for the second.
+
+§15.4 resolves it, and only where it applies: CI builds, runs the layers, and
+writes the record; the agent reads that record and speaks about exceptions. Where
+that pipeline exists, what the agent read through a filter never becomes the
+evidence. **Before it exists — throughout `BOOTSTRAP.md` Steps 1 to 8, and in any
+project that never wires CI — the gap is open**, and those are exactly the
+moments when the toolchain is least trustworthy.
+
+Whether this particular filter drops anything a reader of EVIDENCE would want is
+untested. That is the point: nothing in the baseline asks.
+
+### Candidate change
+
+Not a rule about any named tool — the general layer names no tools, and this
+applies equally to anything that compresses, proxies or summarises on the way to
+the agent.
+
+1. **§6 gains a clause.** The output EVIDENCE records is the command's own. Where
+   something sits between the command and the agent, either the gauntlet is
+   exempted from it or EVIDENCE says it was in force. Cheap, and it makes the
+   existing sentence mean what it was always taken to mean.
+2. **`SETUP.md` §5 gains an environment note.** That section already carries "a
+   missing CLI can report success" and "a model at capacity reports it at the
+   end of the run" — this belongs beside them, as a thing about the world rather
+   than a rule.
+3. **Nothing else.** The practical fix is a project decision and belongs in
+   `PROJECT.md`'s gauntlet rows: run those commands unfiltered. Proxies of this
+   kind generally offer a pass-through mode for exactly this.
+
+### Why this is worth recording rather than fixing now
+
+The tension is real but currently harmless here: PC-Desk has no CI yet and no
+gauntlet has run through the filter. It becomes live the first time a layer's
+output is compressed on the way into an evidence report — which will be soon.
+
+---
+
+## F4 — A wrapper can turn a failing layer into a passing one
+
+**Hit:** 2026-09-21, while testing whether a shell proxy loses information — a
+different question, which it answered by raising this one.
+**Against:** v3.2.0 §5, §11.1; `BOOTSTRAP.md` Step 6; and the workstation's
+global agent instructions.
+**Status:** open, and live on this workstation now.
+
+### What happened
+
+The workstation's shell proxy is imported by the global Codex instructions,
+which say to prefix every shell command with it. Four invocations, measured:
+
+| Invocation | Raw exit | Through the proxy |
+|---|---|---|
+| `git log <nonexistent-ref>` | 128 | **128** — preserved |
+| `proxy bash -c 'echo boom; exit 1'` | 1 | **1** — preserved |
+| `test bash -c 'echo "1 failed"; exit 1'` | 1 | **0** — lost |
+| `err bash -c 'cat f; exit 1'`, where `f` contains `ERROR: something broke` | 1 | **0** — lost |
+
+The last one does not merely lose the status. It prints:
+
+```
+[ok] Command completed successfully (no errors)
+```
+
+Both failing forms are the tool's documented usage — its help gives
+`test [COMMAND]...` and `err [COMMAND]...` with exactly this shape.
+
+One caveat, stated because it is not resolved: the `test` form produced no
+stdout at all, so it is unclear whether it ran the command or failed to
+recognise it. The exit status was 0 for a failing command either way, which is
+the part that matters.
+
+### The gap
+
+**§5 says a layer must be able to fail.** A wrapper that returns 0 on failure
+makes the layer unable to fail, and nothing in §5 contemplates a wrapper
+existing. The layer's command is recorded in `PROJECT.md`; whether something
+sits around it when it actually runs is not.
+
+**§11.1 warns about exactly this hazard in a different shape.** It says never to
+wrap a `codex exec` in a pipeline, because the pipeline replaces the
+invocation's exit status with the last command's. A wrapper does the same thing
+from the other side. The document has a rule for one and nothing for the other,
+and the reasoning it already gives — *a review that died and a review that found
+nothing look identical* — transfers without modification.
+
+**The hazard is default-on wherever an instruction says "always prefix".** It
+does not require anyone to make a mistake.
+
+### What already covers this, and why that matters
+
+v3.1.0's headline finding was that a gauntlet layer can be configured,
+installed, invoked, and completely inert — a mutation runner activating no
+mutant still reports a score. Its remedy: **see each layer fail on purpose once
+before recording it as working.**
+
+That remedy catches F4. It is the same failure with a different mechanism, and
+the fix already in the document is the right one. This finding is therefore less
+about a missing rule than about a rule whose scope needs saying out loud.
+
+### Candidate change
+
+1. **§11.1's pipeline warning generalises.** Anything standing between a command
+   and its reported status — a pipeline, a wrapper, a proxy, a runner — can
+   replace the signal. Say it as the general case rather than as one instance,
+   and keep the reasoning already there.
+2. **The "see it fail once" check applies to the invocation, not the tool.**
+   Watching `pytest` fail proves nothing about `<wrapper> pytest`. What must be
+   seen failing is the exact string `PROJECT.md` records, wrapper included. This
+   is the sharp half of this finding and belongs beside the existing remedy in
+   `BOOTSTRAP.md` Step 6 and `SETUP.md` §4.
+3. **Nothing about any named tool.** The general layer names no tools, and this
+   applies to any wrapper. Where a project uses one, `PROJECT.md`'s gauntlet rows
+   record the full invocation, and the project decides which commands are
+   exempt — most such proxies offer a pass-through mode, and the one here does.
+
+### Relationship to F3
+
+F3 is about fidelity: the output EVIDENCE records may be a compressed rendering
+of the real one. F4 is about the gate: the layer can report success on failure.
+Different mechanisms, different severity. F3 degrades a record; F4 removes a
+check. They share a cause — something sits between a command and the agent — and
+a project that exempts its gauntlet from the wrapper closes both.
