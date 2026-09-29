@@ -67,6 +67,13 @@ line back to a commit — `git show <that-release>:template/AGENTS.md` — to se
 what leaked before it overwrites; with no tag there is nothing for that to
 resolve, and the reader's fallback is to guess at the history or skip the check.
 
+**Before tagging, check every claim against the diff.** Whatever describes the
+release — the commit message, a proposal, a findings entry — lists changes. Read
+each one against `git diff <previous-tag>..HEAD -- template/` and confirm it is
+there. Proposal 002 once listed a change v3.0.0 never made, and it stood for four
+days because the claims beside it were true. Nothing checks this, so it is a
+preference; it takes a minute.
+
 A commit that touches only `BOOTSTRAP.md` or `README.md` changes no version line
 and carries no version in its subject. Labelling one `(vX.Y.Z)` invents a
 release that no file records.

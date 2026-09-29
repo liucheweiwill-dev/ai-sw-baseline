@@ -92,7 +92,9 @@ Correcting that expectation may be worth more than any rule change here.
 **Hit:** 2026-09-21, while answering an unrelated question about a token-saving
 tool.
 **Against:** v3.0.0's own release documentation, and the process generally.
-**Status:** closed in v3.2.0 for the instance; the gap itself is open.
+**Status:** closed. The instance was fixed in v3.2.0; the gap was closed on
+2026-09-29 by a pre-tag check in the root `CLAUDE.md` — no release, since that
+file is not copied into projects.
 
 ### What happened
 
