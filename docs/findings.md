@@ -278,3 +278,86 @@ of the real one. F4 is about the gate: the layer can report success on failure.
 Different mechanisms, different severity. F3 degrades a record; F4 removes a
 check. They share a cause — something sits between a command and the agent — and
 a project that exempts its gauntlet from the wrapper closes both.
+
+---
+
+## F5 — Step 2 does two jobs with different cost structures
+
+**Hit:** 2026-09-29, while reading two AI-written workflow proposals against the
+baseline. Both proposed skipping the plan review for low-risk tasks; neither had
+the baseline in front of it.
+**Against:** v3.2.0, §2 step 2, §3, §11.2.
+**Status:** open. **Priority undetermined** — see §What decides the priority.
+
+### What the text says
+
+§2 conditions two of its steps on the Tier: step 0 (`Tier 3 or on request`) and
+step 7 (`Tier 3`). **Step 2 carries no condition at all**, only `[dual-agent]`.
+Read literally, every task gets a feasibility review — a Tier 1 typo included.
+
+§11.2 then sets that review's effort *independently of the Tier*, "at or above
+the highest effort any builder row uses". So the literal reading is that every
+task, trivial ones included, receives a read-only review at the highest effort
+the project configures, from the builder's vendor.
+
+### The gap
+
+**Step 2 fuses two jobs whose costs have nothing in common.**
+
+- **Feasibility review.** Can this SPEC be built as written; what does it miss;
+  is the design sound. Worth the highest effort — but only where there is a
+  design to examine.
+- **Tier confirmation.** Is the proposed Tier right. Every task needs this, and
+  it is cheap: it asks one question about consequence, not many about design.
+
+§11.2 explains why the review's effort is not derived from the Tier, and the
+reason is entirely about the second job: "raising the Tier is one of the things
+the review exists to do". It then applies the effort that justification
+requires to both jobs at once, on every task.
+
+### The fix that must not be made
+
+**"Skip step 2 for Tier 1" removes the only check on a Tier 1 that was wrongly
+proposed** — and a wrongly-proposed Tier 1 is exactly where the risk hides. A
+"config value" change is one of Tier 1's own listed examples, and the third
+review of this repository put it plainly: *a one-line storage-policy or logging
+change can be high stakes.* The profile's standing checks (§3.1) catch some of
+this on release; they do not catch it before the SPEC is approved.
+
+The ratchet does not cover the gap either. §3 lets Codex raise a Tier at any
+point, including during implementation — but by then the human has approved a
+SPEC written at the wrong Tier, with the wrong layer set and no failure model,
+and raising it means reopening that approval. The review exists to catch it
+before that happens.
+
+This is recorded because the naive fix was just proposed twice, independently,
+and the argument against it existed only in one conversation.
+
+### Candidate change
+
+Split the step rather than skip it.
+
+1. **Every task: a tier confirmation.** One question — is the proposed Tier
+   right — at low effort. It keeps §11.2's reason for existing, and costs a
+   fraction of a review.
+2. **Tier 2 and 3: the full feasibility review**, at the effort §11.2 already
+   sets.
+3. **A confirmation that raises the Tier promotes the task** into the full
+   review. The cheap check is a gate into the expensive one, not a replacement
+   for it.
+
+Minor if adopted: a step gains a condition and a lighter variant, and
+`PROJECT.md` gains one effort row for the confirmation. No existing project needs
+rework.
+
+### What decides the priority
+
+Nothing here is measured. It is not known whether feasibility reviews are 5% of
+the builder's spend on this workstation or 30%, and the answer decides whether
+this is worth a release or merely worth knowing.
+
+The measurement is cheap and already available: record `tokens used` from each
+`codex exec` separately by step — feasibility review, implementation, EVIDENCE —
+across a handful of real tasks, alongside each task's Tier. If reviews of Tier 1
+tasks are a material share, this moves to a proposal. If they are not, it stays
+recorded here for the next time someone suggests skipping the review.
