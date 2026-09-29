@@ -1,7 +1,7 @@
 # AGENTS.md — Dual-Agent Development Baseline
 
 <!-- ============================================================ -->
-<!-- GENERAL LAYER v3.2.0 — DO NOT EDIT.                          -->
+<!-- GENERAL LAYER v3.2.1 — DO NOT EDIT.                          -->
 <!-- Single source: https://github.com/liucheweiwill-dev/ai-sw-baseline                           -->
 <!-- MIT licensed. Copyright (c) 2026 Will. Full text: LICENSE in that repo. -->
 <!-- To update: replace this whole file verbatim. Never merge.     -->
@@ -446,7 +446,12 @@ whitespace removal, and comment deletion are never "slimming".
   where everything discarded was created after that checkpoint (§12). Confirm
   anything wider — a different branch, a reset past the checkpoint, an untracked
   file that predates it.
-- **Never modify a test to make it pass.** Fix the code or raise the defect.
+- **Never change a test to make it pass.** Skipping, deleting or loosening it
+  counts as changing it. Fix the code, or raise the defect. What a test
+  *expects* changes only when the contract does — through a SPEC revision the
+  human approves (§4), naming the scenario whose expected result moved and why
+  — and the test then follows the revision. An implementer who believes a
+  failing test is wrong has found a defect to raise, not an assertion to edit.
 - Never install software automatically. See `SETUP.md`: list the command, let a
   human confirm.
 
